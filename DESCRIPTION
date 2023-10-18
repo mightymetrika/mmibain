@@ -14,3 +14,6 @@ BugReports: https://github.com/mightymetrika/mmibain/issues
 Imports: 
     bain,
     lavaan
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
