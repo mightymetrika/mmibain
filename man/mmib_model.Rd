@@ -15,10 +15,10 @@ mmib_model(
 }
 \arguments{
 \item{formula}{A symbolic description of the model to be fit. Used specifically
-for the \code{lm} and \code{t_test} engines. Default is NULL.}
+for the \code{lm} engine. Default is NULL.}
 
 \item{column_names}{A character vector of length 2, representing the column
-names to be used for the \code{t_test} engine when \code{formula} is not provided. Default
+names to be used for the \code{t_test} engine. Default
 is NULL.}
 
 \item{model}{A model specification (usually as a string) for the \code{lavaan} engine.
@@ -52,10 +52,6 @@ data(mtcars)
 
 # Fit linear model
 mod1 <- mmib_model(mpg ~ wt + qsec, data = mtcars, engine = "lm")
-
-# Fit t-test
-mod2 <- mmib_model(formula = vs ~ am, data = mtcars, engine = "t_test")
-
 
 }
 \seealso{

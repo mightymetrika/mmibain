@@ -13,13 +13,7 @@ test_that("mmib_model works with the `lm` engine", {
 
 test_that("mmib_model works with the `t_test` engine", {
   # Fit t.test with formula
-  mod <- mmib_model(formula = vs ~ am, data = mtcars, engine = "t_test")
-  mod_comp <- stats::t.test(vs ~ am, data = mtcars)
-
-  expect_true(mod$statistic == mod_comp$statistic)
-  expect_equal(class(mod), class(mod_comp))
-
-  rm(mod, mod_comp)
+  expect_error(mmib_model(formula = vs ~ am, data = mtcars, engine = "t_test"))
 
   # Fit t.test with columns
   mod <- mmib_model(column_names = c("vs", "am"), data = mtcars, engine = "t_test")

@@ -4,9 +4,9 @@
 #' supported by the 'bain' package.
 #'
 #' @param formula A symbolic description of the model to be fit. Used specifically
-#' for the `lm` and `t_test` engines. Default is NULL.
+#' for the `lm` engine. Default is NULL.
 #' @param column_names A character vector of length 2, representing the column
-#' names to be used for the `t_test` engine when `formula` is not provided. Default
+#' names to be used for the `t_test` engine. Default
 #' is NULL.
 #' @param model A model specification (usually as a string) for the `lavaan` engine.
 #' Default is NULL.
@@ -32,10 +32,6 @@
 #' # Fit linear model
 #' mod1 <- mmib_model(mpg ~ wt + qsec, data = mtcars, engine = "lm")
 #'
-#' # Fit t-test
-#' mod2 <- mmib_model(formula = vs ~ am, data = mtcars, engine = "t_test")
-#'
-#'
 #' @seealso \code{\link[bain]{bain}} for processing the models fit with `mmib_model`.
 #'
 #' @export
@@ -58,16 +54,12 @@ mmib_model <- function(formula = NULL, column_names = NULL, model = NULL, data,
            model <- stats::lm(formula, data, ...)
          },
          t_test = {
-           if (!is.null(formula)) {
-             response_var <- as.character(formula)[2]
-             group_var <- as.character(formula)[3]
-             model <- stats::t.test(data[[response_var]] ~ data[[group_var]], ...)
-           } else if (!is.null(column_names) && length(column_names) == 2) {
+           if (!is.null(column_names) && length(column_names) == 2) {
              x <- data[[column_names[1]]]
              y <- data[[column_names[2]]]
              model <- stats::t.test(x, y, ...)
            } else {
-             stop("For t_test, either provide a formula or two column names.")
+             stop("For t_test provide two column names.")
            }
          },
          lavaan = {
