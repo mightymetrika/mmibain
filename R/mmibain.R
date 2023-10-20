@@ -4,23 +4,16 @@ mmibain <- function(){
     shiny::titlePanel("MMIBain Analysis"),
     shiny::sidebarLayout(
       shiny::sidebarPanel(
-        # 1. CSV Input
+        # CSV Input
         shiny::fileInput("datafile", "Choose CSV File",
                          multiple = FALSE,
                          accept = c("text/csv",
                                     "text/comma-separated-values,text/plain",
                                     ".csv")),
-        # 2. Displaying the available variables
-        # 3. Engine selection
+        # Engine selection
         shiny::selectInput("engine", "Choose engine:", choices = c("lm", "t_test", "lavaan")),
-        # 4. Formula or model input
-        shiny::conditionalPanel(
-          condition = "input.engine == 't_test'",
-          shiny::radioButtons("ttest_input_type", "Input Type:", choices = c("Formula", "Column Names"), selected = "Formula")
-        ),
         shiny::uiOutput("model_input_ui"),
-        #shiny::textInput("formula_or_model", "Formula/Model"),
-        # 5. Additional arguments
+        # Additional arguments
         shiny::textInput("additional_args", "Additional Arguments (key=value format)"),
         # 6. Fit model button
         shiny::actionButton("fit", "Fit Model"),
@@ -35,6 +28,10 @@ mmibain <- function(){
         shiny::actionButton("run_analysis", "Run Analysis")
       ),
       shiny::mainPanel(
+        # Variable names display
+        shiny::htmlOutput("variables_section"),
+        shiny::uiOutput("model_terms_header"),
+        shiny::verbatimTextOutput("model_terms"),
         # 11 & 12. Outputs for model fit and bain analysis
         shiny::verbatimTextOutput("model_output"),
         shiny::verbatimTextOutput("bain_output")
@@ -45,9 +42,34 @@ mmibain <- function(){
   # Server
   server <- function(input, output, session) {
 
-    # Placeholder for our model (fitted using the Fit Model button)
-    model_fitted <- shiny::reactiveVal()
+    # Reactive: Read the uploaded CSV file
+    uploaded_data <- shiny::reactive({
+      # Check if a file is uploaded
+      inFile <- input$datafile
+      if (is.null(inFile)) {
+        return(NULL)
+      }
 
+      # Read the CSV and return it
+      utils::read.csv(inFile$datapath, stringsAsFactors = TRUE)
+    })
+
+    # Display the entire variables section (header + variable names)
+    output$variables_section <- shiny::renderUI({
+      if (!is.null(uploaded_data())) {
+        list(
+          shiny::tags$h2("Available Variables"),
+          shiny::verbatimTextOutput("variables")
+        )
+      }
+    })
+
+    # Display the variable names
+    output$variables <- shiny::renderPrint({
+      names(uploaded_data())
+    })
+
+    # Select Engine
     shiny::observe({
       if(input$engine == "lavaan") {
         output$model_input_ui <- shiny::renderUI({
@@ -58,27 +80,59 @@ mmibain <- function(){
           shiny::textInput("formula_or_model", "Formula", value = "")
         })
       } else if(input$engine == "t_test") {
-        if(input$ttest_input_type == "Formula") {
-          output$model_input_ui <- shiny::renderUI({
-            shiny::textInput("formula_or_model", "Formula", value = "")
-          })
-        } else {
-          output$model_input_ui <- shiny::renderUI({
-            list(
-              shiny::textInput("column_name_1", "Column Name 1"),
-              shiny::textInput("column_name_2", "Column Name 2")
-            )
+        output$model_input_ui <- shiny::renderUI({
+          list(
+            shiny::textInput("column_name_1", "Column Name 1"),
+            shiny::textInput("column_name_2", "Column Name 2"))
           })
         }
-      }
-    })
+      })
 
     # Logic to fit the model
-    shiny::observeEvent(input$fit, {
-      # ... Your logic here for fitting the model with mmib_model ...
+    model <- NULL
+    model_fitted <- shiny::reactiveVal(FALSE)
 
-      # For demonstration purposes, I'm just updating the reactive value. You should replace this with actual model fitting.
-      model_fitted("Your model results...")
+    shiny::observeEvent(input$fit, {
+      shiny::req(input$formula_or_model, uploaded_data(), input$engine)
+
+      args_list <- list(formula = stats::as.formula(input$formula_or_model), data = uploaded_data(), engine = input$engine)
+
+      # Add extra arguments if provided
+      if (nzchar(input$additional_args)) {
+        extra_args <- tryCatch({
+          str2list(input$additional_args)
+        }, error = function(e) {
+          shiny::showNotification(
+            paste("Error in additional arguments:", e$message),
+            type = "error",
+            duration = NULL
+          )
+          return(NULL)
+        })
+
+        if (!is.null(extra_args)) {
+          args_list <- c(args_list, extra_args)
+        }
+      }
+
+      tryCatch({
+        model <<- do.call(mmib_model, args_list)
+        model_fitted(TRUE)
+        output$model_terms <- shiny::renderPrint({ names(stats::coef(model)) })
+      }, error = function(e) {
+        shiny::showNotification(
+          paste("Error:", e$message),
+          type = "error",
+          duration = NULL
+        )
+        model_fitted(FALSE)
+      })
+    })
+
+    output$model_terms_header <- shiny::renderUI({
+      if(model_fitted()) {
+        shiny::tags$h2("Available Terms for Hypothesis")
+      }
     })
 
     # Logic to run bain analysis on the fitted model
