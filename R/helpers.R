@@ -15,3 +15,4 @@ str2list <- function(arg_str) {
   # Evaluate the string in a new environment to convert it to a list
   eval(parse(text = paste0("list(", arg_str, ")")), envir = new.env())
 }
+
