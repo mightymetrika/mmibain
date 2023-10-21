@@ -73,7 +73,7 @@ mmibain <- function(){
     shiny::observe({
       if(input$engine == "lavaan") {
         output$model_input_ui <- shiny::renderUI({
-          shiny::textInput("formula_or_model", "Lavaan Model", value = "")
+          shiny::textAreaInput("formula_or_model", "Lavaan Model", value = "", rows = 5, resize = "both")
         })
       } else if(input$engine == "lm") {
         output$model_input_ui <- shiny::renderUI({
@@ -93,9 +93,20 @@ mmibain <- function(){
     model_fitted <- shiny::reactiveVal(FALSE)
 
     shiny::observeEvent(input$fit, {
-      shiny::req(input$formula_or_model, uploaded_data(), input$engine)
+      shiny::req(uploaded_data(), input$engine)
 
-      args_list <- list(formula = stats::as.formula(input$formula_or_model), data = uploaded_data(), engine = input$engine)
+      # Adjusting how arguments are gathered based on the engine type
+      if (input$engine == "t_test") {
+        # For t_test engine: gather column names
+        column_names <- c(input$column_name_1, input$column_name_2)
+        args_list <- list(column_names = column_names, data = uploaded_data(), engine = input$engine)
+      } else if (input$engine == "lm") {
+        # For lm use formula specification
+        args_list <- list(formula = stats::as.formula(input$formula_or_model), data = uploaded_data(), engine = input$engine)
+      } else if (input$engine == "lavaan"){
+        args_list <- list(model = input$formula_or_model, data = uploaded_data(), engine = input$engine)
+
+      }
 
       # Add extra arguments if provided
       if (nzchar(input$additional_args)) {
@@ -118,7 +129,18 @@ mmibain <- function(){
       tryCatch({
         model <<- do.call(mmib_model, args_list)
         model_fitted(TRUE)
-        output$model_terms <- shiny::renderPrint({ names(stats::coef(model)) })
+
+        # Display terms based on the engine type
+        if (input$engine == "lm") {
+          terms <- names(stats::coef(model))
+        } else if (input$engine == "t_test") {
+          terms <- c(input$column_name_1, input$column_name_2)
+        } else if (input$engine == "lavaan") {
+          terms <- names(lavaan::coef(model))
+        }
+
+        output$model_terms <- shiny::renderPrint({ terms })
+
       }, error = function(e) {
         shiny::showNotification(
           paste("Error:", e$message),
