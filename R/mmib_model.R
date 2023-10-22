@@ -51,7 +51,7 @@ mmib_model <- function(formula = NULL, column_names = NULL, model = NULL, data,
   switch(engine,
          lm = {
            if (is.null(formula)) stop("Formula is required for lm engine.")
-           model <- stats::lm(formula, data, ...)
+           model <- stats::lm(formula = formula, data, ...)
          },
          t_test = {
            if (!is.null(column_names) && length(column_names) == 2) {
@@ -64,7 +64,7 @@ mmib_model <- function(formula = NULL, column_names = NULL, model = NULL, data,
          },
          lavaan = {
            if (is.null(model)) stop("Model specification is required for lavaan engine.")
-           model <- lavaan::sem(model, data = data, ...)
+           model <- lavaan::sem(model = model, data = data, ...)
          },
          stop(paste("Invalid engine:", engine))
   )

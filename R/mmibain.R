@@ -24,6 +24,7 @@ mmibain <- function(){
         shiny::numericInput("fraction", "Fraction", value = 1),
         # 10. Standardize option
         shiny::checkboxInput("standardize", "Standardize", value = FALSE),
+        shiny::numericInput("seed_value", "Set seed (optional)", value = NULL, min = 1, max = .Machine$integer.max),
         # New - Run Analysis button
         shiny::actionButton("run_analysis", "Run Analysis")
       ),
@@ -41,6 +42,9 @@ mmibain <- function(){
 
   # Server
   server <- function(input, output, session) {
+
+    # At the beginning of your server function
+    rv <- shiny::reactiveValues(hypotheses = NULL, fraction = 1, standardize = FALSE)
 
     # Reactive: Read the uploaded CSV file
     uploaded_data <- shiny::reactive({
@@ -157,21 +161,48 @@ mmibain <- function(){
       }
     })
 
+    # Observe changes and update reactive values
+    shiny::observe({
+      rv$hypotheses <- input$hypotheses
+      rv$fraction <- input$fraction
+      rv$standardize <- input$standardize
+    })
+
+
     # Logic to run bain analysis on the fitted model
     shiny::observeEvent(input$run_analysis, {
-      # ... Your logic here to run bain::bain on model_fitted() ...
+      shiny::req(model_fitted())
 
-      # Set outputs
-      output$model_output <- shiny::renderText({
-        # This is just a placeholder. Replace with actual model output.
-        model_fitted()
-      })
+      # If seed value is provided, set it
+      if (!is.null(input$seed_value)) {
+        set.seed(input$seed_value)
+      }
 
-      output$bain_output <- shiny::renderText({
-        # This is just a placeholder. Replace with actual bain output.
-        "Your bain analysis results..."
-      })
+      # Use the user-provided hypotheses for bain
+      #hypotheses <- input$hypotheses
+
+      #tryCatch({
+        # Run bain analysis
+
+        #bain_result <- bain::bain(model, hypothesis = hypotheses, fraction = input$fraction, standardize = input$standardize)
+        #bain_result <- bain::bain(model, hypothesis = "grpGroup1 < grpGroup2 < grpGroup3", fraction = 1, standardize = FALSE)
+        #bain_result <- bain::bain(model, hypothesis = rv$hypotheses, fraction = rv$fraction, standardize = rv$standardize)
+        bain_result <- bain::bain(model, hypothesis = rv$hypotheses(), fraction = rv$fraction(), standardize = rv$standardize())
+
+
+        # Set outputs for the model and bain analysis
+        output$model_output <- shiny::renderPrint({ print(bain_result) })
+        output$bain_output <- shiny::renderPrint({ summary(bain_result, ci = 0.95) })
+
+      # }, error = function(e) {
+      #   shiny::showNotification(
+      #     paste("Error:", e$message),
+      #     type = "error",
+      #     duration = NULL
+      #   )
+      # })
     })
+
 
   }
 
