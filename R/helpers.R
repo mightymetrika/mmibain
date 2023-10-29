@@ -16,3 +16,32 @@ str2list <- function(arg_str) {
   eval(parse(text = paste0("list(", arg_str, ")")), envir = new.env())
 }
 
+
+# concatenate_relations <- function(greater_less, equals) {
+#   # If both are non-empty
+#   if (length(greater_less) > 0 && length(equals) > 0) {
+#     return(paste(greater_less, equals, sep=" & "))
+#   }
+#   # If only one is non-empty
+#   else if (length(greater_less) > 0) {
+#     return(greater_less)
+#   } else if (length(equals) > 0) {
+#     return(equals)
+#   }
+#   # If both are empty
+#   else {
+#     return("")
+#   }
+# }
+
+concatenate_relations <- function(greater_less, equals) {
+  if (greater_less == "" && equals == "") {
+    return("")
+  } else if (greater_less == "") {
+    return(equals)
+  } else if (equals == "") {
+    return(greater_less)
+  } else {
+    return(paste(greater_less, equals, sep = " & "))
+  }
+}
