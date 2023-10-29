@@ -17,7 +17,8 @@ deal_cards_to_rc_grid <- function(deck = mmcards::shuffle_deck(), n) {
   cards_matrix <- matrix(dealt_cards, nrow = 2, ncol = n, byrow = TRUE)
 
   # Return results
-  return(list(cards_matrix = cards_matrix, updated_deck = deck))
+  #return(list(cards_matrix = cards_matrix, updated_deck = deck))
+  return(cards_matrix)
 }
 
 
@@ -28,17 +29,17 @@ generate_study_data <- function(x, sample_size) {
   col_vals <- numeric(0)
 
   # Extract the cards_matrix from x
-  cards_matrix <- x$cards_matrix
+  #cards_matrix <- x$cards_matrix
 
   # Number of columns in cards_matrix
-  num_cols <- ncol(cards_matrix)
+  num_cols <- ncol(x)
 
   # For each column in cards_matrix
   for (j in 1:num_cols) {
 
     # Extract mean and sd values for the current column
-    mean_val <- cards_matrix[[1, j]]$value
-    sd_val <- cards_matrix[[2, j]]$value
+    mean_val <- x[[1, j]]$value
+    sd_val <- x[[2, j]]$value
 
     # Generate a sample using rnorm
     generated_vals <- stats::rnorm(n = sample_size, mean = mean_val, sd = sd_val)
@@ -105,6 +106,16 @@ process_original_study <- function(df, alpha = 0.05) {
         hypothesis_list[[paste0(comb[1], comb[2])]] <- paste0(comb[1], " = ", comb[2])
       }
     }
+
+    # Check if all pairwise t-tests are not significant
+    if (all(pairwise_t$p.value >= alpha, na.rm = TRUE)) {
+      col_levels <- levels(df$ColLabs)
+      combined_hypothesis <- paste(col_levels, collapse = " = ")
+    }
+
+  } else {
+    col_levels <- levels(df$ColLabs)
+    combined_hypothesis <- paste(col_levels, collapse = " = ")
   }
 
   # Creating a directed graph for simplifying relations
@@ -140,18 +151,24 @@ process_original_study <- function(df, alpha = 0.05) {
   }
 
   # Combine simplified relations and add the prefix "ColLabs"
-  combined_hypothesis <- paste(
-    sapply(unlist(hypothesis_list_simplified), function(hyp) {
-      gsub("(Col\\d+)", "ColLabs\\1", hyp)
-    }),
-    collapse = " & "
-  )
+  if (length(hypothesis_list_simplified) != 0) {
+    combined_hypothesis <- paste(
+      sapply(unlist(hypothesis_list_simplified), function(hyp) {
+        gsub("(Col\\d+)", "ColLabs\\1", hyp)
+      }),
+      collapse = " & "
+    )
+  } else {
+    combined_hypothesis <- gsub("(Col\\d+)", "ColLabs\\1", combined_hypothesis)
+  }
+
 
   # Descriptives
   descriptives <- psych::describeBy(df, df$ColLabs)
 
   return(list(hypothesis = combined_hypothesis,
-              pairwise_t = pairwise_t,
+              pairwise_t = if (pval_anova < alpha) {
+                pairwise_t} else {NULL},
               fit_summary = summary_fit,
               descriptives = descriptives,
               fit = fit,
@@ -159,13 +176,26 @@ process_original_study <- function(df, alpha = 0.05) {
               levene_test = levene_res))
 }
 
+generate_Ho_from_pairwise_t <- function(original_study_results) {
 
-generate_Ho_from_Horiginal <- function(Horiginal) {
-  # Extract unique variables
-  vars <- unique(unlist(regmatches(Horiginal, gregexpr("\\b[a-zA-Z]+\\d*\\b", Horiginal))))
+  if (!is.null(original_study_results$pairwise_t)){
+    # Extract column and row names from pairwise_t
+    colnames <- colnames(original_study_results$pairwise_t$p.value)
+    rownames <- rownames(original_study_results$pairwise_t$p.value)
 
-  # Concatenate with "="
-  Ho <- paste(vars, collapse = " = ")
+    # Combine column and row names to get all unique variables
+    all_variables <- unique(c(colnames, rownames))
+
+    # Prefix the variable names with "ColLabs"
+    all_variables <- paste0("ColLabs", all_variables)
+
+    # Generate the null hypothesis
+    Ho <- paste(all_variables, collapse = " = ")
+  } else {
+    Ho <- original_study_results$hypothesis
+  }
+
+
 
   return(Ho)
 }
@@ -176,18 +206,27 @@ process_replication_study <- function(replication_data, original_study_results) 
   Horiginal <- original_study_results$hypothesis
 
   # Generate the null hypothesis
-  Ho <- generate_Ho_from_Horiginal(Horiginal)
+  Ho <- generate_Ho_from_pairwise_t(original_study_results)
 
   # Prepare the bain hypothesis string
-  bain_hypothesis <- paste0(Ho, " ; ", Horiginal)
+  if (Ho == Horiginal) {
+    # If the hypotheses are the same, use only one
+    bain_hypothesis <- Horiginal
+    message_to_display <- "Notice: The null hypothesis and the original hypothesis were the same, so only the original hypothesis is tested."
+  } else {
+    bain_hypothesis <- paste0(Ho, " ; ", Horiginal)
+    message_to_display <- NULL
+  }
 
   # Set up bain call
   fit_replication <- stats::aov(ColVals ~ ColLabs - 1, data = replication_data)
   bain_results <- do.call(bain::bain, args = list(x = fit_replication,
-                                                 hypothesis = bain_hypothesis))
+                                                  hypothesis = bain_hypothesis))
 
-  return(bain_results)
+  # Include the potential message in the results
+  list(bain_results = bain_results, message = message_to_display)
 }
+
 
 swapper <- function(cards_matrix, swap_cols = NULL, swap_in_col = NULL,
                     swap_in_row = NULL) {
