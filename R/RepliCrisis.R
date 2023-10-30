@@ -32,12 +32,13 @@ RepliCrisis <- function(){
       ),
 
       shiny::mainPanel(
-        shiny::tableOutput("card_display"),
-        shiny::textOutput("hypothesis"),
+        shiny::uiOutput("card_display"),
         shiny::tableOutput("fit_summary"),
+        shiny::tableOutput("pair_t"),
+        shiny::textOutput("hypothesis"),
         shiny::plotOutput("fit_plot"),
-        shiny::textOutput("shapiro_test"),
-        shiny::textOutput("levene_test"),
+        shiny::tableOutput("shapiro_test"),
+        shiny::tableOutput("levene_test"),
         shiny::tableOutput("descriptives"),
         shiny::textOutput("bain_results_summary"),
         shiny::textOutput("bain_results")
@@ -46,6 +47,10 @@ RepliCrisis <- function(){
   )
 
   server <- function(input, output, session) {
+
+    # Variable to hold the study results
+    study_results <- shiny::reactiveVal(NULL)
+
     shiny::observeEvent(input$original_study, {
       # If seed value is provided, set it
       if (!is.na(input$seed_value)) {
@@ -71,8 +76,22 @@ RepliCrisis <- function(){
                                                                 )),
                                          n = input$difficulty)
 
-      # It's unclear how you want to display the card grid. If it's a simple matrix, you can use:
-      #output$card_display <- shiny::renderTable(card_grid)
+        # Rendering the UI for the card grid
+        output$card_display <- shiny::renderUI({
+          card_images <- lapply(card_grid, function(card) {
+            # Each card's image can be extracted as card$icard
+            shiny::renderImage({
+              list(src = system.file(card$icard, package = "mmibain"), contentType = "image/png", width=200, height="auto")
+            }, deleteFile = FALSE)
+          })
+
+          # Convert list to a matrix for arranging in a grid
+          matrix_layout <- matrix(card_images, nrow = 2, byrow = TRUE)
+
+          apply(matrix_layout, 1, function(row) {
+            shiny::fluidRow(lapply(row, shiny::column, width = 12/length(row)))
+          })
+        })
 
       # Generate study data
       study_data <- generate_study_data(card_grid, sample_size = input$sample_size)
@@ -80,21 +99,37 @@ RepliCrisis <- function(){
       # Process original study
       study_results <- process_original_study(study_data, alpha = input$alpha_level)
 
+      # Update study_results to hold the generated data
+      study_results(study_results)
+
       # Display fit summary and hypothesis
       output$fit_summary <- shiny::renderTable(broom::tidy(study_results$fit))
+      output$pair_t <- shiny::renderTable(broom::tidy(study_results$pairwise_t))
       output$hypothesis <- shiny::renderText(study_results$hypothesis)
     })
 
     shiny::observeEvent(input$show_diagnostics, {
       # Display diagnostics for the original study: fit plot, Shapiro test, and Levene test
 
-      # Placeholder code
+      # Extract study_results
+      results <- study_results()
+
+      output$fit_plot <- shiny::renderPlot({
+        plot(results$fit)
+      })
+
+      output$shapiro_test <- shiny::renderTable(broom::tidy(results$shapiro_test))
+      output$levene_test <- shiny::renderTable(broom::tidy(results$levene_test))
+
     })
 
     shiny::observeEvent(input$show_descriptives, {
       # Display descriptive statistics for the original study
 
-      # Placeholder code
+      # Extract study_results
+      results <- study_results()
+
+      output$descriptives <- shiny::renderTable(results$descriptives)
     })
 
     shiny::observeEvent(input$replication_study, {

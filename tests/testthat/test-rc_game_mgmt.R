@@ -1,4 +1,4 @@
-test_that("basic original study work flow works", {
+test_that("Orginial Study Workflow", {
 
   set.seed(100)
 
@@ -6,7 +6,6 @@ test_that("basic original study work flow works", {
   result <- deal_cards_to_rc_grid(n = 3)
   study_data <- generate_study_data(result, sample_size = 100)
   study_results <- process_original_study(study_data)
-  #bain_res <- bain::bain(study_results$fit, hypothesis = study_results$hypothesis)
 
   # Test expectations
   expect_equal(length(result), 6)
@@ -15,7 +14,7 @@ test_that("basic original study work flow works", {
   expect_s3_class(study_results$fit, "lm")
 })
 
-test_that("basic game work flow works",{
+test_that("Game Work Flow",{
 
   set.seed(250)
 
@@ -40,7 +39,7 @@ test_that("basic game work flow works",{
 
 
 
-test_that("card swap works",{
+test_that("Card Swap",{
 
   set.seed(492)
 
@@ -89,7 +88,7 @@ test_that("card swap works",{
 })
 
 
-test_that("basic game work flow works with i_deck",{
+test_that("i_deck Game Workflow",{
 
   set.seed(250)
 
@@ -127,7 +126,7 @@ test_that("basic game work flow works with i_deck",{
 
 })
 
-test_that("Test basic game flow on random hands",{
+test_that("Random Hands Game Flow",{
 
   # Create function to test random hands
   find_errors <- function(num_iterations, n = 3, sample_size = 10) {

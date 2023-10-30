@@ -164,7 +164,7 @@ process_original_study <- function(df, alpha = 0.05) {
 
 
   # Descriptives
-  descriptives <- psych::describeBy(df, df$ColLabs)
+  descriptives <- generate_descriptives(df, "ColLabs")
 
   return(list(hypothesis = combined_hypothesis,
               pairwise_t = if (pval_anova < alpha) {
