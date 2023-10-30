@@ -15,6 +15,7 @@ Imports:
     bain,
     broom,
     car,
+    e1071,
     igraph,
     lavaan,
     mmcards,
