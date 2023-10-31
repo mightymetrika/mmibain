@@ -40,6 +40,7 @@ RepliCrisis <- function(){
         shiny::tableOutput("shapiro_test"),
         shiny::tableOutput("levene_test"),
         shiny::tableOutput("descriptives"),
+        shiny::uiOutput("rep_card_display"),
         shiny::textOutput("bain_results_summary"),
         shiny::textOutput("bain_results")
       )
@@ -48,8 +49,9 @@ RepliCrisis <- function(){
 
   server <- function(input, output, session) {
 
-    # Variable to hold the study results
+    # Set up reactive values
     study_results <- shiny::reactiveVal(NULL)
+    replication_cards <- shiny::reactiveVal
 
     shiny::observeEvent(input$original_study, {
       # If seed value is provided, set it
@@ -58,38 +60,22 @@ RepliCrisis <- function(){
       }
 
       # Deal cards
-      card_grid <- deal_cards_to_rc_grid(deck = mmcards::i_deck(deck = mmcards::shuffle_deck(),
-                                                                i_path = "www",
-                                                                i_names = c("2_of_clubs", "2_of_diamonds", "2_of_hearts", "2_of_spades",
-                                                                            "3_of_clubs", "3_of_diamonds", "3_of_hearts", "3_of_spades",
-                                                                            "4_of_clubs", "4_of_diamonds", "4_of_hearts", "4_of_spades",
-                                                                            "5_of_clubs", "5_of_diamonds", "5_of_hearts", "5_of_spades",
-                                                                            "6_of_clubs", "6_of_diamonds", "6_of_hearts", "6_of_spades",
-                                                                            "7_of_clubs", "7_of_diamonds", "7_of_hearts", "7_of_spades",
-                                                                            "8_of_clubs", "8_of_diamonds", "8_of_hearts", "8_of_spades",
-                                                                            "9_of_clubs", "9_of_diamonds", "9_of_hearts", "9_of_spades",
-                                                                            "10_of_clubs", "10_of_diamonds", "10_of_hearts", "10_of_spades",
-                                                                            "jack_of_clubs", "jack_of_diamonds", "jack_of_hearts", "jack_of_spades",
-                                                                            "queen_of_clubs", "queen_of_diamonds", "queen_of_hearts", "queen_of_spades",
-                                                                            "king_of_clubs", "king_of_diamonds", "king_of_hearts", "king_of_spades",
-                                                                            "ace_of_clubs", "ace_of_diamonds", "ace_of_hearts", "ace_of_spades"
-                                                                )),
-                                         n = input$difficulty)
+      card_grid <- deal_cards_to_rc_grid(n = input$difficulty)
 
         # Rendering the UI for the card grid
         output$card_display <- shiny::renderUI({
-          card_images <- lapply(card_grid, function(card) {
-            # Each card's image can be extracted as card$icard
+
+          card_images <- unlist(apply(card_grid, 1, function(row) sapply(row,function(card){
             shiny::renderImage({
               list(src = system.file(card$icard, package = "mmibain"), contentType = "image/png", width=200, height="auto")
             }, deleteFile = FALSE)
-          })
+          })))
 
           # Convert list to a matrix for arranging in a grid
           matrix_layout <- matrix(card_images, nrow = 2, byrow = TRUE)
 
           apply(matrix_layout, 1, function(row) {
-            shiny::fluidRow(lapply(row, shiny::column, width = 12/length(row)))
+            shiny::fluidRow(lapply(row, shiny::column, width = floor(12/length(row))))
           })
         })
 
@@ -115,7 +101,23 @@ RepliCrisis <- function(){
       results <- study_results()
 
       output$fit_plot <- shiny::renderPlot({
-        plot(results$fit)
+        # Set up a 2x2 grid for 4 plots
+        graphics::par(mfrow = c(2, 2))
+
+        # Plot 1: Residuals vs Fitted
+        plot(results$fit, which = 1)
+
+        # Plot 2: Normal Q-Q
+        plot(results$fit, which = 2)
+
+        # Plot 3: Scale-Location (Standardized residuals vs Fitted values)
+        plot(results$fit, which = 3)
+
+        # Plot 4: Cook's distance
+        plot(results$fit, which = 4)
+
+        # Reset graphics parameters to default (optional but good practice)
+        graphics::par(mfrow = c(1, 1))
       })
 
       output$shapiro_test <- shiny::renderTable(broom::tidy(results$shapiro_test))
@@ -134,8 +136,26 @@ RepliCrisis <- function(){
 
     shiny::observeEvent(input$replication_study, {
       # Deal cards for replication study
+      card_grid_replication <- deal_cards_to_rc_grid(n = input$difficulty)
 
-      # Placeholder code
+      # Update the reactive value
+      replication_cards(card_grid_replication)
+
+      # Rendering the UI for the card grid for replication study
+      output$rep_card_display <- shiny::renderUI({
+        rep_card_images <- unlist(apply(card_grid_replication, 1, function(row) sapply(row,function(card){
+          shiny::renderImage({
+            list(src = system.file(card$icard, package = "mmibain"), contentType = "image/png", width=200, height="auto")
+          }, deleteFile = FALSE)
+        })))
+
+        # Convert list to a matrix for arranging in a grid
+        rep_matrix_layout <- matrix(rep_card_images, nrow = 2, byrow = TRUE)
+
+        apply(rep_matrix_layout, 1, function(row) {
+          shiny::fluidRow(lapply(row, shiny::column, width = floor(12/length(row))))
+        })
+      })
     })
 
     shiny::observeEvent(input$swap_cols, {
