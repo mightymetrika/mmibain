@@ -41,8 +41,8 @@ RepliCrisis <- function(){
         shiny::tableOutput("levene_test"),
         shiny::tableOutput("descriptives"),
         shiny::uiOutput("rep_card_display"),
-        shiny::textOutput("bain_results_summary"),
-        shiny::textOutput("bain_results")
+        shiny::verbatimTextOutput("bain_results_summary"),
+        shiny::verbatimTextOutput("bain_results")
       )
     )
   )
@@ -51,7 +51,7 @@ RepliCrisis <- function(){
 
     # Set up reactive values
     study_results <- shiny::reactiveVal(NULL)
-    replication_cards <- shiny::reactiveVal
+    replication_cards <- shiny::reactiveVal(NULL)
 
     shiny::observeEvent(input$original_study, {
       # If seed value is provided, set it
@@ -62,21 +62,9 @@ RepliCrisis <- function(){
       # Deal cards
       card_grid <- deal_cards_to_rc_grid(n = input$difficulty)
 
-        # Rendering the UI for the card grid
-        output$card_display <- shiny::renderUI({
-
-          card_images <- unlist(apply(card_grid, 1, function(row) sapply(row,function(card){
-            shiny::renderImage({
-              list(src = system.file(card$icard, package = "mmibain"), contentType = "image/png", width=200, height="auto")
-            }, deleteFile = FALSE)
-          })))
-
-          # Convert list to a matrix for arranging in a grid
-          matrix_layout <- matrix(card_images, nrow = 2, byrow = TRUE)
-
-          apply(matrix_layout, 1, function(row) {
-            shiny::fluidRow(lapply(row, shiny::column, width = floor(12/length(row))))
-          })
+      # Rendering the UI for the card grid
+      output$card_display <- shiny::renderUI({
+        render_card_grid(card_grid)
         })
 
       # Generate study data
@@ -143,44 +131,116 @@ RepliCrisis <- function(){
 
       # Rendering the UI for the card grid for replication study
       output$rep_card_display <- shiny::renderUI({
-        rep_card_images <- unlist(apply(card_grid_replication, 1, function(row) sapply(row,function(card){
-          shiny::renderImage({
-            list(src = system.file(card$icard, package = "mmibain"), contentType = "image/png", width=200, height="auto")
-          }, deleteFile = FALSE)
-        })))
-
-        # Convert list to a matrix for arranging in a grid
-        rep_matrix_layout <- matrix(rep_card_images, nrow = 2, byrow = TRUE)
-
-        apply(rep_matrix_layout, 1, function(row) {
-          shiny::fluidRow(lapply(row, shiny::column, width = floor(12/length(row))))
-        })
+        render_card_grid(card_grid_replication)
       })
     })
 
     shiny::observeEvent(input$swap_cols, {
-      # Swap columns as per user choice
+      # Extract the replication card grid from the reactive value
+      rep_cards <- replication_cards()
 
-      # Placeholder code
+      # Check for NULL values in user input and exit early if found
+      if (is.null(input$swap_col1) || is.null(input$swap_col2)) return(NULL)
+
+      # Swap the columns using the swapper function
+      tryCatch({
+        new_card_grid <- swapper(rep_cards, swap_cols = c(input$swap_col1, input$swap_col2))
+
+        # Update the reactive value to hold the new card grid
+        replication_cards(new_card_grid)
+
+        # Rerender the UI for the card grid
+        output$rep_card_display <- shiny::renderUI({
+          render_card_grid(new_card_grid)
+        })
+      }, error = function(e) {
+        # Handle the error by displaying a message
+        shiny::showNotification(paste("An error occurred:", e$message), type = "error")
+      })
     })
+    #})
 
     shiny::observeEvent(input$swap_inside_col, {
-      # Swap inside a column as per user choice
+      # Extract the replication card grid from the reactive value
+      rep_cards <- replication_cards()
 
-      # Placeholder code
+      # Check for NULL values in user input and exit early if found
+      if (is.null(input$swap_in_col)) return(NULL)
+
+      # Swap within the column using the swapper function
+      tryCatch({
+        new_card_grid <- swapper(rep_cards, swap_in_col = input$swap_in_col)
+
+        # Update the reactive value to hold the new card grid
+        replication_cards(new_card_grid)
+
+        # Rerender the UI for the card grid
+        output$rep_card_display <- shiny::renderUI({
+          render_card_grid(new_card_grid)
+        })
+      }, error = function(e) {
+        # Handle the error by displaying a message
+        shiny::showNotification(paste("An error occurred:", e$message), type = "error")
+      })
     })
 
     shiny::observeEvent(input$swap_inside_row, {
-      # Swap inside a row as per user choice
+      # Extract the replication card grid from the reactive value
+      rep_cards <- replication_cards()
 
-      # Placeholder code
+      # Check for NULL values in user input and exit early if found
+      if (is.null(input$swap_in_row_num) || is.null(input$swap_in_row_col1) || is.null(input$swap_in_row_col2)) return(NULL)
+
+      # Swap within the row using the swapper function
+      tryCatch({
+        new_card_grid <- swapper(rep_cards, swap_in_row = c(input$swap_in_row_num, input$swap_in_row_col1, input$swap_in_row_col2))
+
+        # Update the reactive value to hold the new card grid
+        replication_cards(new_card_grid)
+
+        # Rerender the UI for the card grid
+        output$rep_card_display <- shiny::renderUI({
+          render_card_grid(new_card_grid)
+        })
+      }, error = function(e) {
+        # Handle the error by displaying a message
+        shiny::showNotification(paste("An error occurred:", e$message), type = "error")
+      })
     })
+
+    # shiny::observeEvent(input$run_replication, {
+    #   # Run the replication analysis after user finishes making swaps
+    #
+    #   # Placeholder code
+    # })
 
     shiny::observeEvent(input$run_replication, {
-      # Run the replication analysis after user finishes making swaps
+      # Extract the current card deck for replication study from the reactive value
+      rep_cards <- replication_cards()
 
-      # Placeholder code
+      # If there's no replication card deck, exit early
+      if (is.null(rep_cards)) return(NULL)
+
+      # Generate replication study data
+      replication_data <- generate_study_data(rep_cards, sample_size = input$sample_size)
+
+      # Process replication study
+      replication_results <- process_replication_study(replication_data, study_results())
+
+      # Display the replication study results in the UI
+      output$bain_results_summary <- shiny::renderPrint({
+        summary(replication_results$bain_results)
+        # summary_text <- utils::capture.output(summary(replication_results$bain_results))
+        # paste(summary_text, collapse = "<br>")
+      })
+
+      output$bain_results <- shiny::renderPrint({
+        print(replication_results$bain_results)
+        # results_text <- utils::capture.output(print(replication_results$bain_results))
+        # paste(results_text, collapse = "<br>")
+      })
     })
+
   }
 
   shiny::shinyApp(ui, server)
