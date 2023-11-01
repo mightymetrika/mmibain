@@ -299,3 +299,19 @@ swapper <- function(cards_matrix, swap_cols = NULL, swap_in_col = NULL,
 
   return(cards_matrix)
 }
+
+
+render_card_grid <- function(new_card_grid) {
+  rep_card_images <- unlist(apply(new_card_grid, 1, function(row) sapply(row, function(card) {
+    shiny::renderImage({
+      list(src = system.file(card$icard, package = "mmibain"), contentType = "image/png", width = 200, height = "auto")
+    }, deleteFile = FALSE)
+  })))
+
+  rep_matrix_layout <- matrix(rep_card_images, nrow = 2, byrow = TRUE)
+  card_ui <- apply(rep_matrix_layout, 1, function(row) {
+    shiny::fluidRow(lapply(row, shiny::column, width = floor(12/length(row))))
+  })
+  return(card_ui)
+}
+
