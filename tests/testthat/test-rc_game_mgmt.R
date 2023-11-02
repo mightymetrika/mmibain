@@ -38,6 +38,30 @@ test_that("Game Work Flow",{
 })
 
 
+test_that("Interpret Replications Results",{
+
+  set.seed(1220)
+
+  # Run basic work flow
+
+  ## Original study
+  os_deck <- deal_cards_to_rc_grid(n = 3)
+  original_study_data <- generate_study_data(os_deck, sample_size = 100)
+  original_study_results <- process_original_study(original_study_data)
+
+  ## Replication study
+  rs_deck <- deal_cards_to_rc_grid(n = 3)
+  replication_data <- generate_study_data(rs_deck, sample_size = 100)
+  replication_results <- process_replication_study(replication_data,
+                                                   original_study_results)
+
+  interp <- interpret_replication_results(replication_results)
+
+
+  # Test expectations
+  expect_equal(length(interp), 3)
+})
+
 
 test_that("Card Swap",{
 
