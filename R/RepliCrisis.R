@@ -9,6 +9,8 @@ RepliCrisis <- function(){
         shiny::numericInput("difficulty", "Select Difficulty", value = 3, min = 3, max = 13),
         shiny::numericInput("alpha_level", "Select Alpha Level", value = 0.05, min = 0.01, max = 0.10, step = 0.01),
         shiny::numericInput("seed_value", "Set seed (optional)", value = NA, min = 1, max = .Machine$integer.max),
+        shiny::numericInput("bf_threshold", "Bayes Factor Threshold", value = 10),
+        shiny::numericInput("pmpb_threshold", "Posterior Model Probability Threshold", value = 0.95),
 
         # Original study
         shiny::fluidRow(
@@ -42,7 +44,9 @@ RepliCrisis <- function(){
         shiny::tableOutput("descriptives"),
         shiny::uiOutput("rep_card_display"),
         shiny::verbatimTextOutput("bain_results_summary"),
-        shiny::verbatimTextOutput("bain_results")
+        shiny::verbatimTextOutput("bain_results"),
+        shiny::uiOutput("interpretation"),
+        shiny::textOutput("disclaimer")
       )
     )
   )
@@ -158,7 +162,6 @@ RepliCrisis <- function(){
         shiny::showNotification(paste("An error occurred:", e$message), type = "error")
       })
     })
-    #})
 
     shiny::observeEvent(input$swap_inside_col, {
       # Extract the replication card grid from the reactive value
@@ -208,12 +211,6 @@ RepliCrisis <- function(){
       })
     })
 
-    # shiny::observeEvent(input$run_replication, {
-    #   # Run the replication analysis after user finishes making swaps
-    #
-    #   # Placeholder code
-    # })
-
     shiny::observeEvent(input$run_replication, {
       # Extract the current card deck for replication study from the reactive value
       rep_cards <- replication_cards()
@@ -230,14 +227,37 @@ RepliCrisis <- function(){
       # Display the replication study results in the UI
       output$bain_results_summary <- shiny::renderPrint({
         summary(replication_results$bain_results)
-        # summary_text <- utils::capture.output(summary(replication_results$bain_results))
-        # paste(summary_text, collapse = "<br>")
       })
 
       output$bain_results <- shiny::renderPrint({
         print(replication_results$bain_results)
-        # results_text <- utils::capture.output(print(replication_results$bain_results))
-        # paste(results_text, collapse = "<br>")
+      })
+
+      # Interpret the replication results using the thresholds provided by the user
+      interpretation <- interpret_replication_results(
+        replication_results,
+        bf_threshold = input$bf_threshold,
+        pmpb_threshold = input$pmpb_threshold
+      )
+
+      # Display the interpretation and result message
+      output$interpretation <- shiny::renderUI({
+        if (interpretation$result == "win") {
+          shiny::tags$div(
+            shiny::tags$h1("You Win!", style = "color: green; font-size: 48px;"),
+            shiny::tags$p(interpretation$interpretation)
+          )
+        } else {
+          shiny::tags$div(
+            shiny::tags$h1("You Lose!", style = "color: red; font-size: 48px;"),
+            shiny::tags$p(interpretation$interpretation)
+          )
+        }
+      })
+
+      # Display the disclaimer
+      output$disclaimer <- shiny::renderText({
+        interpretation$disclaimer
       })
     })
 
