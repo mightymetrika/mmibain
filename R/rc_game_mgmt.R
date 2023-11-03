@@ -32,7 +32,6 @@ deal_cards_to_rc_grid <- function(deck = mmcards::i_deck(deck = mmcards::shuffle
   cards_matrix <- matrix(dealt_cards, nrow = 2, ncol = n, byrow = TRUE)
 
   # Return results
-  #return(list(cards_matrix = cards_matrix, updated_deck = deck))
   return(cards_matrix)
 }
 
@@ -42,9 +41,6 @@ generate_study_data <- function(x, sample_size) {
   # Initialize empty vectors to hold column labels and values
   col_labs <- character(0)
   col_vals <- numeric(0)
-
-  # Extract the cards_matrix from x
-  #cards_matrix <- x$cards_matrix
 
   # Number of columns in cards_matrix
   num_cols <- ncol(x)
@@ -314,93 +310,6 @@ render_card_grid <- function(new_card_grid) {
   })
   return(card_ui)
 }
-
-# interpret_replication_results <- function(replication_results, bf_threshold = 3, pmpb_threshold = 0.80) {
-#   bf_c_values <- replication_results$bain_results$fit$BF.c
-#   pmpb_values <- replication_results$bain_results$fit$PMPb
-#   interpretation <- ""
-#
-#   # Function to interpret a single hypothesis
-#   interpret_hypothesis <- function(hypothesis, bf_c, pmpb) {
-#     if (!is.na(bf_c) && bf_c > bf_threshold) {
-#       paste("There is strong evidence for", hypothesis, "since BF.c is greater than the threshold of", bf_threshold)
-#     } else if (!is.na(pmpb) && pmpb > pmpb_threshold) {
-#       paste("There is a high probability for", hypothesis, "since PMPb is greater than the threshold of", pmpb_threshold)
-#     } else {
-#       paste("The evidence for", hypothesis, "is inconclusive with the given thresholds.")
-#     }
-#   }
-#
-#   # Interpret H1
-#   interpretation <- c(interpretation, interpret_hypothesis("H1", bf_c_values[1], pmpb_values[1]))
-#
-#   # Check if H2 is present and interpret accordingly
-#   if (!is.na(bf_c_values[2]) && !is.na(pmpb_values[2])) {
-#     # Interpret H2
-#     interpretation <- c(interpretation, interpret_hypothesis("H2", bf_c_values[2], pmpb_values[2]))
-#   }
-#
-#   # Interpret Hu (when H2 is not present)
-#   if (!is.na(pmpb_values[3])) {
-#     interpretation <- c(interpretation, interpret_hypothesis("Hu", NA, pmpb_values[3]))
-#   }
-#
-#   # Combining all interpretations
-#   final_interpretation <- paste(interpretation, collapse = " ")
-#   return(final_interpretation)
-# }
-
-
-# interpret_replication_results <- function(replication_results, bf_threshold = 3,
-#                                           pmpb_threshold = 0.80) {
-#
-#   # Retrieve hypothesis names
-#   hypothesis_names <- row.names(replication_results$bain_results$fit)
-#
-#   # Check if H2 is present
-#   h2_present <- "H2" %in% hypothesis_names
-#
-#   # Retrieve BF.c and PMPb values
-#   bf_c_values <- replication_results$bain_results$fit$BF.c
-#   pmpb_values <- replication_results$bain_results$fit$PMPb
-#
-#   # Function to interpret a single hypothesis with nested condition checking
-#   interpret_hypothesis <- function(hypothesis, bf_c, pmpb) {
-#     if (!is.na(bf_c) && bf_c > bf_threshold && !is.na(pmpb) && pmpb > pmpb_threshold) {
-#       list(message = paste("There is strong evidence for", hypothesis, "with both BF.c and PMPb exceeding their respective thresholds."),
-#            result = "win")
-#     } else {
-#       list(message = paste("The evidence for", hypothesis, "is inconclusive or does not satisfy both thresholds."),
-#            result = "lose")
-#     }
-#   }
-#
-#   # Interpretation and result initialisation
-#   interpretation <- ""
-#   result <- "lose"
-#
-#   if (h2_present) {
-#     # Interpret H2
-#     h2_interpretation <- interpret_hypothesis("H2", bf_c_values[2], pmpb_values[2])
-#     interpretation <- h2_interpretation$message
-#     result <- h2_interpretation$result
-#   } else {
-#     # Interpret H1 if H2 is not present
-#     h1_interpretation <- interpret_hypothesis("H1", bf_c_values[1], pmpb_values[1])
-#     interpretation <- h1_interpretation$message
-#     result <- h1_interpretation$result
-#   }
-#
-#   # Add disclaimer about thresholds
-#   disclaimer <- paste("Note: Interpretation uses thresholds for BF.c and PMPb as per the provided guidelines.",
-#                       "For a comprehensive understanding of Bayesian Factors in the context of informative hypothesis testing,",
-#                       "refer to the provided citation.")
-#
-#   # Combine interpretation, result, and disclaimer
-#   final_output <- paste(interpretation, "Result of the game:", result, disclaimer, sep = "\n")
-#
-#   return(final_output)
-# }
 
 interpret_replication_results <- function(replication_results, bf_threshold = 3,
                                           pmpb_threshold = 0.80) {

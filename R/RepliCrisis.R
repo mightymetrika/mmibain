@@ -21,32 +21,18 @@ RepliCrisis <- function(){
           # Replication study
           shiny::column(12, shiny::actionButton("replication_study", "Conduct Replication Study"))
         ),
-        shiny::numericInput("swap_col1", "Swap Column 1", value = NULL),
-        shiny::numericInput("swap_col2", "Swap Column 2", value = NULL),
-        shiny::actionButton("swap_cols", "Swap Columns"),
-        shiny::numericInput("swap_in_col", "Swap Inside Column", value = NULL),
-        shiny::actionButton("swap_inside_col", "Execute Inside Column Swap"),
-        shiny::numericInput("swap_in_row_num", "Row Number", value = NULL),
-        shiny::numericInput("swap_in_row_col1", "Swap Row Column 1", value = NULL),
-        shiny::numericInput("swap_in_row_col2", "Swap Row Column 2", value = NULL),
-        shiny::actionButton("swap_inside_row", "Execute Inside Row Swap"),
         shiny::actionButton("run_replication", "Run Replication Analysis")
       ),
 
       shiny::mainPanel(
-        shiny::uiOutput("card_display"),
-        shiny::tableOutput("fit_summary"),
-        shiny::tableOutput("pair_t"),
-        shiny::textOutput("hypothesis"),
-        shiny::plotOutput("fit_plot"),
-        shiny::tableOutput("shapiro_test"),
-        shiny::tableOutput("levene_test"),
-        shiny::tableOutput("descriptives"),
-        shiny::uiOutput("rep_card_display"),
-        shiny::verbatimTextOutput("bain_results_summary"),
-        shiny::verbatimTextOutput("bain_results"),
-        shiny::uiOutput("interpretation"),
-        shiny::textOutput("disclaimer")
+        shiny::uiOutput("original_study_title"),
+        shiny::uiOutput("model_summary_title"),
+        shiny::uiOutput("original_hypothesis_title"),
+        shiny::uiOutput("diagnostics_title"),
+        shiny::uiOutput("descriptive_stats_title"),
+        shiny::uiOutput("replication_study_title"),
+        shiny::uiOutput("swap_cards_title"),
+        shiny::uiOutput("results_title"),
       )
     )
   )
@@ -56,8 +42,13 @@ RepliCrisis <- function(){
     # Set up reactive values
     study_results <- shiny::reactiveVal(NULL)
     replication_cards <- shiny::reactiveVal(NULL)
+    replication_conducted <- shiny::reactiveVal(FALSE)
 
     shiny::observeEvent(input$original_study, {
+
+      # Reset reactive values
+      replication_conducted(FALSE)
+
       # If seed value is provided, set it
       if (!is.na(input$seed_value)) {
         set.seed(input$seed_value)
@@ -84,6 +75,27 @@ RepliCrisis <- function(){
       output$fit_summary <- shiny::renderTable(broom::tidy(study_results$fit))
       output$pair_t <- shiny::renderTable(broom::tidy(study_results$pairwise_t))
       output$hypothesis <- shiny::renderText(study_results$hypothesis)
+    })
+
+    # Conditional UI for fit summary
+    output$fit_summary_ui <- shiny::renderUI({
+      if(input$original_study) {
+        shiny::tableOutput("fit_summary")
+      }
+    })
+
+    # Conditional UI for pairwise t-test results
+    output$pair_t_ui <- shiny::renderUI({
+      if(input$original_study) {
+        shiny::tableOutput("pair_t")
+      }
+    })
+
+    # Conditional UI for hypothesis
+    output$hypothesis_ui <- shiny::renderUI({
+      if(input$original_study) {
+        shiny::textOutput("hypothesis")
+      }
     })
 
     shiny::observeEvent(input$show_diagnostics, {
@@ -117,6 +129,25 @@ RepliCrisis <- function(){
 
     })
 
+    # Conditional UI for diagnostics
+    output$fit_plot_ui <- shiny::renderUI({
+      if(input$show_diagnostics) {
+        shiny::plotOutput("fit_plot")
+      }
+    })
+
+    output$shapiro_test_ui <- shiny::renderUI({
+      if(input$show_diagnostics) {
+        shiny::tableOutput("shapiro_test")
+      }
+    })
+
+    output$levene_test_ui <- shiny::renderUI({
+      if(input$show_diagnostics) {
+        shiny::tableOutput("levene_test")
+      }
+    })
+
     shiny::observeEvent(input$show_descriptives, {
       # Display descriptive statistics for the original study
 
@@ -124,6 +155,12 @@ RepliCrisis <- function(){
       results <- study_results()
 
       output$descriptives <- shiny::renderTable(results$descriptives)
+    })
+
+    output$descriptives_ui <- shiny::renderUI({
+      if(input$show_descriptives) {
+        shiny::tableOutput("descriptives")
+      }
     })
 
     shiny::observeEvent(input$replication_study, {
@@ -137,6 +174,9 @@ RepliCrisis <- function(){
       output$rep_card_display <- shiny::renderUI({
         render_card_grid(card_grid_replication)
       })
+
+      # Set the reactive value to TRUE since the replication study is now conducted
+      replication_conducted(TRUE)
     })
 
     shiny::observeEvent(input$swap_cols, {
@@ -210,6 +250,39 @@ RepliCrisis <- function(){
         shiny::showNotification(paste("An error occurred:", e$message), type = "error")
       })
     })
+    # Render the swap controls only when the replication study has been conducted
+    output$swap_controls_ui <- shiny::renderUI({
+      if (replication_conducted()) {
+        shiny::fluidRow(
+          # First column: Swap Columns
+          shiny::column(4,
+                        shiny::tagList(
+                          shiny::numericInput("swap_col1", "Swap Column 1", value = NULL),
+                          shiny::numericInput("swap_col2", "Swap Column 2", value = NULL),
+                          shiny::actionButton("swap_cols", "Swap Columns")
+                        )
+          ),
+          # Second column: Swap Inside Column
+          shiny::column(4,
+                        shiny::tagList(
+                          shiny::numericInput("swap_in_col", "Swap Inside Column", value = NULL),
+                          shiny::actionButton("swap_inside_col", "Execute Inside Column Swap")
+                        )
+          ),
+          # Third column: Swap Inside Row
+          shiny::column(4,
+                        shiny::tagList(
+                          shiny::numericInput("swap_in_row_num", "Row Number", value = NULL),
+                          shiny::numericInput("swap_in_row_col1", "Swap Row Column 1", value = NULL),
+                          shiny::numericInput("swap_in_row_col2", "Swap Row Column 2", value = NULL),
+                          shiny::actionButton("swap_inside_row", "Execute Inside Row Swap")
+                        )
+          )
+        )
+      }
+    })
+
+
 
     shiny::observeEvent(input$run_replication, {
       # Extract the current card deck for replication study from the reactive value
@@ -259,6 +332,92 @@ RepliCrisis <- function(){
       output$disclaimer <- shiny::renderText({
         interpretation$disclaimer
       })
+    })
+
+    # Original Study Title
+    output$original_study_title <- shiny::renderUI({
+      if(input$original_study) {
+        shiny::tagList(
+          shiny::tags$h3("Original Study"),
+          shiny::uiOutput("card_display")
+        )
+      }
+    })
+
+    # Model Summary Title
+    output$model_summary_title <- shiny::renderUI({
+      if(input$original_study) {
+        shiny::tagList(
+          shiny::tags$h3("Model Summary"),
+          shiny::uiOutput("fit_summary_ui"),
+          shiny::uiOutput("pair_t_ui")
+        )
+      }
+    })
+
+    # Original Hypothesis Title
+    output$original_hypothesis_title <- shiny::renderUI({
+      if(input$original_study) {
+        shiny::tagList(
+          shiny::tags$h3("Original Hypothesis"),
+          shiny::uiOutput("hypothesis_ui")
+        )
+      }
+    })
+
+    # Diagnostics Title
+    output$diagnostics_title <- shiny::renderUI({
+      if(input$show_diagnostics) {
+        shiny::tagList(
+          shiny::tags$h3("Diagnostics"),
+          shiny::uiOutput("fit_plot_ui"),
+          shiny::uiOutput("shapiro_test_ui"),
+          shiny::uiOutput("levene_test_ui")
+        )
+      }
+    })
+
+    # Descriptive Statistics Title
+    output$descriptive_stats_title <- shiny::renderUI({
+      if(input$show_descriptives) {
+        shiny::tagList(
+          shiny::tags$h3("Descriptive Statistics"),
+          shiny::uiOutput("descriptives_ui")
+        )
+      }
+    })
+
+    # Replication Study Title
+    output$replication_study_title <- shiny::renderUI({
+      if(replication_conducted()) {
+        shiny::tagList(
+          shiny::tags$h3("Replication Study"),
+          shiny::uiOutput("rep_card_display")
+        )
+      }
+    })
+
+    # Swap Cards Title
+    output$swap_cards_title <- shiny::renderUI({
+      if(replication_conducted()) {
+        shiny::tagList(
+          shiny::tags$h3("Swap Cards"),
+          shiny::uiOutput("swap_controls_ui")
+        )
+      }
+    })
+
+    # Results Title
+    output$results_title <- shiny::renderUI({
+      if(input$run_replication) {
+        shiny::tagList(
+          shiny::tags$h3("Results"),
+          shiny::verbatimTextOutput("bain_results_summary"),
+          shiny::verbatimTextOutput("bain_results"),
+          shiny::uiOutput("interpretation"),
+          shiny::textOutput("disclaimer")
+        )
+      }
     })
 
   }
