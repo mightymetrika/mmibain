@@ -14,7 +14,7 @@ RepliCrisis <- function(){
 
         # Original study
         shiny::fluidRow(
-          shiny::column(12, shiny::actionButton("original_study", "Conduct Original Study")),
+          shiny::column(12, shiny::actionButton("original_study", "Conduct Original Study", title = "Refresh page to reset game")),
           shiny::column(12, shiny::actionButton("show_diagnostics", "Show Diagnostics")),
           shiny::column(12, shiny::actionButton("show_descriptives", "Show Descriptives")),
 
@@ -47,6 +47,8 @@ RepliCrisis <- function(){
     shiny::observeEvent(input$original_study, {
 
       # Reset reactive values
+      study_results(NULL)
+      replication_cards(NULL)
       replication_conducted(FALSE)
 
       # If seed value is provided, set it
@@ -332,6 +334,9 @@ RepliCrisis <- function(){
       output$disclaimer <- shiny::renderText({
         interpretation$disclaimer
       })
+
+      # Show notification message
+      shiny::showNotification("Refresh page to start new game.", type = "default")
     })
 
     # Original Study Title
@@ -409,7 +414,7 @@ RepliCrisis <- function(){
 
     # Results Title
     output$results_title <- shiny::renderUI({
-      if(input$run_replication) {
+      if(input$run_replication & replication_conducted()) {
         shiny::tagList(
           shiny::tags$h3("Results"),
           shiny::verbatimTextOutput("bain_results_summary"),
