@@ -1,3 +1,33 @@
+#' Deal Cards to a RepliCrisis Grid
+#'
+#' This function deals cards from a shuffled deck and arranges them into a matrix
+#' suitable for the RepliCrisis game grid.
+#'
+#' @param deck A data frame representing a deck of cards, which by default is a
+#' shuffled standard deck from the `mmcards` package.
+#' @param n The number of card pairs to deal. The function will deal 2*n cards
+#' and arrange them into two rows, for the RepliCrisis grid.
+#' @return A matrix with two rows and n columns, representing the dealt cards
+#' arranged into pairs.
+#' @examples
+#' # Deal a grid with 3 card pairs
+#' grid <- deal_cards_to_rc_grid(n = 3)
+#' @export
+#'
+#' @details
+#' The function first checks if there are enough cards in the deck to deal the
+#' required number of pairs. If not, it stops with an error. Then, it deals 2*n
+#' cards from the provided deck, reshaping them into a 2-row matrix where each
+#' column represents a pair of cards.
+#'
+#' If no deck is provided, the function will shuffle a standard deck using
+#' functions from the `mmcards` package. The default deck includes all standard
+#' 52 playing cards.
+#'
+#' The grid of cards will be used by the generate_study_data function to generate
+#' data for n groups where the values for each group are simulated from a normal
+#' distribution with mean and standard deviation defined by the values in the card
+#' pair.
 deal_cards_to_rc_grid <- function(deck = mmcards::i_deck(deck = mmcards::shuffle_deck(),
                                                          i_path = "www",
                                                          i_names = c("2_of_clubs", "2_of_diamonds", "2_of_hearts", "2_of_spades",
@@ -35,7 +65,32 @@ deal_cards_to_rc_grid <- function(deck = mmcards::i_deck(deck = mmcards::shuffle
   return(cards_matrix)
 }
 
-
+#' Generate Study Data for RepliCrisis
+#'
+#' This function simulates data for the Replication Crisis study by drawing samples
+#' from normal distributions defined by the card values.
+#'
+#' @param x A matrix with two rows representing the mean and standard deviation
+#' for each group.
+#' @param sample_size The number of samples to draw for each study group.
+#' @return A data frame containing the simulated study data. Each row corresponds
+#' to a single sample and includes the group label and the sampled value.
+#' @examples
+#' study_data <- generate_study_data(x = deal_cards_to_rc_grid(n = 3),
+#'                                   sample_size = 30)
+#' @export
+#'
+#' @details
+#' The function expects a matrix `x` generated from deal_cards_to_rc_grid() where
+#' the first row contains mean values and the second row contains standard deviation
+#' values. It then generates `sample_size` number of normal random values for each
+#' group, using the respective mean and standard deviation. The resulting data
+#' frame has two columns: one for the group labels and one for the generated values.
+#'
+#' The group labels are factors with levels corresponding to the column numbers
+#' prefixed by 'Col'. The generated values are numeric and simulate the data that
+#' would be collected in the study. The function uses the `rnorm` function from
+#' the `stats` package for generating random samples.
 generate_study_data <- function(x, sample_size) {
 
   # Initialize empty vectors to hold column labels and values
@@ -69,6 +124,50 @@ generate_study_data <- function(x, sample_size) {
   return(df_result)
 }
 
+#' Process Original Study Data for Analysis
+#'
+#' This function processes the original study data by performing ANOVA,
+#' post-hoc t-tests, and checking assumptions such as normality of residuals and
+#' homogeneity of variances.
+#'
+#' @param df A data frame containing the study data, with columns `ColLabs` for
+#' labels and `ColVals` for values.
+#' @param alpha Significance level for the statistical tests, by default set to
+#' 0.05.
+#' @return A list containing elements for hypothesis, pairwise t-tests
+#' (if applicable), fit summary, descriptives, fit object, Shapiro-Wilk normality
+#' test result, and Levene's test result.
+#' @examples
+#' results <- process_original_study(df = generate_study_data(
+#'                                        x = deal_cards_to_rc_grid(n = 3),
+#'                                        sample_size = 30),
+#'                                   alpha = 0.05)
+#' @export
+#'
+#' @details
+#' The function starts by fitting an ANOVA model to the data to check for overall
+#' significance. If significant differences are found, it proceeds with pairwise
+#' t-tests to explore differences between individual conditions.
+#'
+#' The function then checks for normality of residuals using the Shapiro-Wilk test
+#' and for homogeneity of variances using Levene's test. It constructs a hypothesis
+#' string based on the results of the pairwise t-tests.
+#'
+#' A directed graph is created to represent the relationships between the conditions.
+#' The graph is then simplified to reflect the most direct relationships, which
+#' are used to construct the final hypothesis string.
+#'
+#' Descriptive statistics are generated for each condition using the
+#' generate_descriptives() function.
+#'
+#' The function returns a list with the following components:
+#' - `hypothesis`: A string representing the simplified relationships between conditions.
+#' - `pairwise_t`: The result of pairwise t-tests, if performed.
+#' - `fit_summary`: The summary of the ANOVA model.
+#' - `descriptives`: Descriptive statistics for each condition.
+#' - `fit`: The ANOVA model object.
+#' - `shapiro_test`: The result of the Shapiro-Wilk normality test.
+#' - `levene_test`: The result of Levene's test for homogeneity of variances.
 process_original_study <- function(df, alpha = 0.05) {
 
   # ANOVA without the intercept
@@ -187,6 +286,38 @@ process_original_study <- function(df, alpha = 0.05) {
               levene_test = levene_res))
 }
 
+#' Generate Null Hypothesis from Pairwise t-test Results
+#'
+#' This function generates a null hypothesis statement (Ho) from the results of
+#' pairwise t-tests. If pairwise t-tests are not available, it uses the hypothesis
+#' from the original study results.
+#'
+#' @param original_study_results A list containing the results of an original study,
+#' including a `pairwise_t` element if pairwise t-tests were conducted.
+#' @return A string representing the null hypothesis for the study.
+#' @examples
+#' Ho <- generate_Ho_from_pairwise_t(
+#'           original_study_results = process_original_study(
+#'                                    df = generate_study_data(
+#'                                    x = deal_cards_to_rc_grid(n = 3),
+#'                                    sample_size = 30),
+#'                                    alpha = 0.05))
+#' @export
+#'
+#' @details
+#' The function checks if the `pairwise_t` element is present in the
+#' `original_study_results` list. If present, it extracts the p-values and the
+#' corresponding column and row names to identify all unique variables involved
+#' in the pairwise comparisons.
+#'
+#' The unique variables are prefixed with "ColLabs" to denote the column labels
+#' from the original dataset. These variables are then concatenated with an
+#' equality sign to form the null hypothesis statement, which assumes no difference
+#' between any of the groups.
+#'
+#' If the `pairwise_t` element is not present, indicating that no pairwise
+#' comparisons were made, the function returns the hypothesis generated by the
+#' original study results.
 generate_Ho_from_pairwise_t <- function(original_study_results) {
 
   if (!is.null(original_study_results$pairwise_t)){
@@ -355,7 +486,14 @@ interpret_replication_results <- function(replication_results, bf_threshold = 3,
   disclaimer <- paste(
     "Disclaimer: The thresholds for BF.c and PMPb are used here as part of a game for educational purposes.",
     "This approach is not intended to endorse the rigid use of threshold values for hypothesis testing.",
-    "It is very unfortunate that threshold values have appeared in the literature to label evidence as 'positive' or 'strong'.",
+    "Please consider the following quotation from Hoijtink et. al. (2019):",
+    "'It is very unfortunate that threshold values that can be used to answer this question have appeared in the literature.",
+    "Sir Harold Jeffreys, who originally proposed the Bayes Factor (Jeffreys, 1961), used a BF0u larger than 3.2 as 'positive' evidence in favor of H0.",
+    "He also proposed to use BF0u larger than 10 as 'strong' evidence.",
+    "More recent, Kass and Raftery (1995) suggested to use larger than 3 and larger than 20, respectively.",
+    "One of the implications of these labels and numbers is that 3 might very well become the counterpart of .05 when using the Bayes factor.'",
+    "Please also keep in mind that, for this game, the hypothesis derived from the original study is a simplified version of the Hoijtink et. al. (2019) orignal hypothesis for evaluating replication studies.",
+    "In particular, the original hypothesis in this game either uses only inequality constraints or specifies that the original hypothesis is the same as the null hypothesis.",
     "For a comprehensive understanding of Bayesian Factors in the context of informative hypothesis testing,",
     "please refer to 'Hoijtink, H., Mulder, J., van Lissa, C., & Gu, X. (2019). A tutorial on testing hypotheses using the Bayes factor.",
     "Psychological methods, 24(5), 539-556. https://doi.org/10.1037/met0000201'.",
