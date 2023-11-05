@@ -37,7 +37,7 @@ The graph is then simplified to reflect the most direct relationships, which
 are used to construct the final hypothesis string.
 
 Descriptive statistics are generated for each condition using the
-generate_descriptives() function.
+generate_descriptives() internal function.
 
 The function returns a list with the following components:
 \itemize{

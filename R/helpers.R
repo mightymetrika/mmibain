@@ -16,25 +16,50 @@ str2list <- function(arg_str) {
   eval(parse(text = paste0("list(", arg_str, ")")), envir = new.env())
 }
 
-concatenate_relations <- function(greater_less, equals) {
-  if (greater_less == "" && equals == "") {
-    return("")
-  } else if (greater_less == "") {
-    return(equals)
-  } else if (equals == "") {
-    return(greater_less)
-  } else {
-    return(paste(greater_less, equals, sep = " & "))
-  }
-}
+# concatenate_relations <- function(greater_less, equals) {
+#   if (greater_less == "" && equals == "") {
+#     return("")
+#   } else if (greater_less == "") {
+#     return(equals)
+#   } else if (equals == "") {
+#     return(greater_less)
+#   } else {
+#     return(paste(greater_less, equals, sep = " & "))
+#   }
+# }
 
+#' Generate Descriptive Statistics for Study Groups
+#'
+#' @description
+#' This internal helper function generates descriptive statistics for each group
+#' within the original study data. It calculates the sample size, mean, standard
+#' deviation, median, median absolute deviation, minimum, maximum, skewness, and
+#' kurtosis for the values associated with each group.
+#'
+#' @param df A data frame containing the study data.
+#' @param group_var The name of the column in `df` that contains the group labels.
+#'
+#' @details
+#' The function iterates over each unique group found in the `group_var` column
+#' of the data frame `df`. For each group, it computes the descriptive statistics
+#' using base R functions and functions from the `psych` and `e1071` packages for
+#' skewness and kurtosis, respectively.
+#'
+#' The results are returned as a data frame where each row corresponds to a group
+#' and each column to a descriptive statistic.
+#'
+#' @note
+#' As this is an internal function intended for use within process_original_study
+#' function of the package.
+#'
+#' @keywords internal
 generate_descriptives <- function(df, group_var) {
   # List of unique groups
   groups <- unique(df[[group_var]])
 
   # Function to calculate descriptives for each group
   calc_descriptives <- function(group_data) {
-    group_ColVals <- group_data$ColVals # Assuming 'Feuchte' column is equivalent to 'ColVals'
+    group_ColVals <- group_data$ColVals
 
     list(
       n = length(group_ColVals),

@@ -158,7 +158,7 @@ generate_study_data <- function(x, sample_size) {
 #' are used to construct the final hypothesis string.
 #'
 #' Descriptive statistics are generated for each condition using the
-#' generate_descriptives() function.
+#' generate_descriptives() internal function.
 #'
 #' The function returns a list with the following components:
 #' - `hypothesis`: A string representing the simplified relationships between conditions.
@@ -337,11 +337,54 @@ generate_Ho_from_pairwise_t <- function(original_study_results) {
     Ho <- original_study_results$hypothesis
   }
 
-
-
   return(Ho)
 }
 
+#' Process Replication Study Data
+#'
+#' This function processes the data from a replication study by comparing it
+#' with the results from an original study, using the `bain` package for Bayesian
+#' inference.
+#'
+#' @param replication_data A data frame containing the replication study data,
+#' with columns `ColLabs` for labels and `ColVals` for values.
+#' @param original_study_results A list containing the results of an original study,
+#' including the hypothesis and pairwise t-test results, if applicable.
+#'
+#' @return A list containing the results from the Bayesian analysis (`bain_results`)
+#' and a message indicating if the null hypothesis and the original hypothesis were
+#' the same (`message`).
+#'
+#' @examples
+#' replication_results <- process_replication_study(
+#'   replication_data = generate_study_data(
+#'     x = deal_cards_to_rc_grid(n = 3),
+#'     sample_size = 30
+#'   ),
+#'   original_study_results = process_original_study(
+#'     df = generate_study_data(
+#'       x = deal_cards_to_rc_grid(n = 3),
+#'       sample_size = 30
+#'     ),
+#'     alpha = 0.05
+#'   )
+#' )
+#'
+#' @export
+#'
+#' @details
+#' The function begins by extracting the original hypothesis (`Horiginal`) from
+#' the `original_study_results`. It then generates the null hypothesis (`Ho`)
+#' using the `generate_Ho_from_pairwise_t` function.
+#'
+#' A hypothesis string for the Bayesian analysis is prepared by comparing `Ho`
+#' and `Horiginal`. If they are the same, only `Horiginal` is used; otherwise,
+#' both are included in the Bayesian analysis via `bain`.
+#'
+#' An ANOVA model is fitted to the replication data, which is then passed to
+#' the `bain` function along with the hypothesis string. The Bayesian analysis
+#' results are returned along with any message regarding the comparison of
+#' hypotheses.
 process_replication_study <- function(replication_data, original_study_results) {
 
   # Extract Horiginal from original_study_results
@@ -369,7 +412,39 @@ process_replication_study <- function(replication_data, original_study_results) 
   list(bain_results = bain_results, message = message_to_display)
 }
 
-
+#' Card Matrix Swapping Function
+#'
+#' This function performs swapping operations within a card matrix to rearrange
+#' cards. It can swap entire columns, swap cards within a single column, or swap
+#' cards within a single row. It is designed to be used on a replication study
+#' card grid before generating replication study data.
+#'
+#' @param cards_matrix A matrix representing the card grid on which to perform swaps.
+#' @param swap_cols A numeric vector of length 2 specifying the columns to swap.
+#' @param swap_in_col A single integer indicating a column where the two cards
+#' will be swapped.
+#' @param swap_in_row A numeric vector of length 3 indicating the row number
+#' followed by the two column numbers within that row to swap.
+#'
+#' @return A matrix of the same dimensions as `cards_matrix` with the specified
+#' swaps performed.
+#'
+#' @examples
+#' swapper(cards_matrix = deal_cards_to_rc_grid(n = 3), swap_cols = c(1,2))
+#'
+#' @export
+#'
+#' @details
+#' The `swapper` function can be used to rearrange cards in a card matrix. It allows
+#' for three types of swaps:
+#'   - Swapping two columns: Specify two columns to swap their entire content.
+#'   - Swapping within a column: Reverse the order of two cards in the same column.
+#'   - Swapping within a row: Swap two cards within the same row.
+#'
+#' The function keeps track of the swapping history to prevent multiple swaps within
+#' the same column or row, as these are restricted operations. After a swap operation,
+#' the function updates the class of the `cards_matrix` to include "swapper" to track
+#' its history.
 swapper <- function(cards_matrix, swap_cols = NULL, swap_in_col = NULL,
                     swap_in_row = NULL) {
 
@@ -427,7 +502,39 @@ swapper <- function(cards_matrix, swap_cols = NULL, swap_in_col = NULL,
   return(cards_matrix)
 }
 
-
+#' Render Card Grid for Shiny App
+#'
+#' @description
+#' This internal helper function is used to render a grid of card images in the
+#' RepliCrisis Shiny application. It takes a matrix representing the card grid
+#' and converts it into a Shiny UI layout with card images.
+#'
+#' @param new_card_grid A matrix where each entry is a list representing a card,
+#' including information needed to render the card image.
+#'
+#' @details
+#' The function iterates over each row of the `new_card_grid` matrix to render
+#' the card images using Shiny's `renderImage` function. It then constructs a UI
+#' layout using `fluidRow` and `column` to display the images in a grid format
+#' suitable for a Shiny application.
+#'
+#' The images are sourced from the `mmibain` package and are assumed to be PNG
+#' files that are formatted and named in a way that is compatible with the
+#' `system.file` function used to locate them.
+#'
+#' @return
+#' Returns a Shiny UI object that contains a rendered grid of card images.
+#'
+#' @note
+#' This function is an internal helper specifically designed for the RepliCrisis
+#' Shiny application. It relies on the structure of the `new_card_grid` being
+#' consistent with expected input and the `mmibain` package for card images.
+#'
+#' @seealso
+#' \code{\link[shiny]{renderImage}}, \code{\link[shiny]{fluidRow}}, and \code{\link[shiny]{column}}
+#' for details on the Shiny functions used to render images and construct the UI layout.
+#'
+#' @keywords internal
 render_card_grid <- function(new_card_grid) {
   rep_card_images <- unlist(apply(new_card_grid, 1, function(row) sapply(row, function(card) {
     shiny::renderImage({
@@ -442,6 +549,54 @@ render_card_grid <- function(new_card_grid) {
   return(card_ui)
 }
 
+#' Interpretation of Replication Study Results
+#'
+#' This function interprets the results of a replication study by applying Bayes
+#' factor (BF) and posterior model probabilities (PMPb) thresholds. It checks
+#' against predefined thresholds to determine if there is strong evidence for the
+#' hypotheses derived from the original study.
+#'
+#' @param replication_results A list containing the results of a replication study,
+#' specifically a bain object with BF and PMPb values.
+#' @param bf_threshold The threshold for the Bayes factor (BF.c) above which the
+#' evidence is considered strong. Default is 3.
+#' @param pmpb_threshold The threshold for the posterior model probabilities (PMPb)
+#' above which the evidence is considered strong. Default is 0.80.
+#' @return A list with elements 'interpretation' providing the interpretative
+#' message, 'result' indicating a 'win' or 'lose' based on the interpretation, and
+#' 'disclaimer' providing a contextual disclaimer.
+#' @examples
+#' # Original study
+#' os_deck <- deal_cards_to_rc_grid(n = 3)
+#' original_study_data <- generate_study_data(os_deck, sample_size = 100)
+#' original_study_results <- process_original_study(original_study_data)
+#'
+#' # Replication study
+#' rs_deck <- deal_cards_to_rc_grid(n = 3)
+#' replication_data <- generate_study_data(rs_deck, sample_size = 100)
+#' replication_results <- process_replication_study(replication_data,
+#'                                                  original_study_results)
+#'
+#' interpret_replication_results(replication_results)
+#' @export
+#'
+#' @details
+#' The function first checks for the presence of a secondary hypothesis (H2) in
+#' the analysis results. If H2 is present, it will prioritize its interpretation;
+#' otherwise, it defaults to interpreting H1. Interpretation is based on whether
+#' the BF.c and PMPb values exceed their respective thresholds.
+#'
+#' A 'win' result means there is strong evidence for the hypothesis, while a 'lose'
+#' indicates the evidence is inconclusive or not strong enough.
+#'
+#' The function includes a disclaimer about the use of threshold values for
+#' hypothesis testing and recommends consulting the cited literature for a
+#' comprehensive understanding of Bayesian factors and informative hypothesis
+#' testing.
+#'
+#' @note The thresholds used in this function are for educational purposes within
+#' the context of a game and should not be taken as rigid rules for hypothesis
+#' testing in practice.
 interpret_replication_results <- function(replication_results, bf_threshold = 3,
                                           pmpb_threshold = 0.80) {
 
