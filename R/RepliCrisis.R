@@ -1,5 +1,28 @@
+#' RepliCrisis Shiny App
+#'
+#' The RepliCrisis Shiny app is an interactive game based on the process for
+#' evaluating replication studies presented in Hoijtink et. al. (2009). Users can
+#' conduct original studies, process the results, and attempt to replicate the
+#' studies while adjusting parameters to see how changes affect the outcome.
+#'
+#'
+#' @return An interactive Shiny app.
+#'
+#' @examples
+#' if(interactive()){
+#' RepliCrisis()
+#' }
+#'
+#' @export
+#' @keywords shinyapp
+#'
+#' @references
+#' Hoijtink, H., Mulder, J., van Lissa, C., & Gu, X. (2019). A tutorial on
+#' testing hypotheses using the Bayes factor. Psychological methods, 24(5),
+#' 539–556. https://doi.org/10.1037/met0000201
 RepliCrisis <- function(){
   ui <- shiny::fluidPage(
+    theme = shinythemes::shinytheme("paper"),
     shiny::titlePanel("RepliCrisis"),
 
     shiny::sidebarLayout(
@@ -14,7 +37,7 @@ RepliCrisis <- function(){
 
         # Original study
         shiny::fluidRow(
-          shiny::column(12, shiny::actionButton("original_study", "Conduct Original Study", title = "Refresh page to reset game")),
+          shiny::column(12, shiny::actionButton("original_study", "Conduct Original Study")),
           shiny::column(12, shiny::actionButton("show_diagnostics", "Show Diagnostics")),
           shiny::column(12, shiny::actionButton("show_descriptives", "Show Descriptives")),
 
@@ -40,14 +63,20 @@ RepliCrisis <- function(){
   server <- function(input, output, session) {
 
     # Set up reactive values
+    original_conducted <- shiny::reactiveVal(FALSE)
     study_results <- shiny::reactiveVal(NULL)
+    diagnostics_requested <- shiny::reactiveVal(FALSE)
+    descriptives_requested <- shiny::reactiveVal(FALSE)
     replication_cards <- shiny::reactiveVal(NULL)
     replication_conducted <- shiny::reactiveVal(FALSE)
 
     shiny::observeEvent(input$original_study, {
 
       # Reset reactive values
+      original_conducted(FALSE)
       study_results(NULL)
+      diagnostics_requested(FALSE)
+      descriptives_requested(FALSE)
       replication_cards(NULL)
       replication_conducted(FALSE)
 
@@ -77,6 +106,9 @@ RepliCrisis <- function(){
       output$fit_summary <- shiny::renderTable(broom::tidy(study_results$fit))
       output$pair_t <- shiny::renderTable(broom::tidy(study_results$pairwise_t))
       output$hypothesis <- shiny::renderText(study_results$hypothesis)
+
+      # Update study conducted reactiveVal
+      original_conducted(TRUE)
     })
 
     # Conditional UI for fit summary
@@ -101,6 +133,9 @@ RepliCrisis <- function(){
     })
 
     shiny::observeEvent(input$show_diagnostics, {
+      # Update reactiveVal
+      diagnostics_requested(TRUE)
+
       # Display diagnostics for the original study: fit plot, Shapiro test, and Levene test
 
       # Extract study_results
@@ -126,8 +161,11 @@ RepliCrisis <- function(){
         graphics::par(mfrow = c(1, 1))
       })
 
+      # Get diagnostic statistical tests
       output$shapiro_test <- shiny::renderTable(broom::tidy(results$shapiro_test))
-      output$levene_test <- shiny::renderTable(broom::tidy(results$levene_test))
+      lev_tst <- broom::tidy(results$levene_test)
+      lev_tst$method <- "Levene Test"
+      output$levene_test <- shiny::renderTable(lev_tst)
 
     })
 
@@ -151,6 +189,10 @@ RepliCrisis <- function(){
     })
 
     shiny::observeEvent(input$show_descriptives, {
+
+      #Update reactiveVal
+      descriptives_requested(TRUE)
+
       # Display descriptive statistics for the original study
 
       # Extract study_results
@@ -334,9 +376,6 @@ RepliCrisis <- function(){
       output$disclaimer <- shiny::renderText({
         interpretation$disclaimer
       })
-
-      # Show notification message
-      shiny::showNotification("Refresh page to start new game.", type = "default")
     })
 
     # Original Study Title
@@ -351,7 +390,7 @@ RepliCrisis <- function(){
 
     # Model Summary Title
     output$model_summary_title <- shiny::renderUI({
-      if(input$original_study) {
+      if(input$original_study & original_conducted()) {
         shiny::tagList(
           shiny::tags$h3("Model Summary"),
           shiny::uiOutput("fit_summary_ui"),
@@ -362,7 +401,7 @@ RepliCrisis <- function(){
 
     # Original Hypothesis Title
     output$original_hypothesis_title <- shiny::renderUI({
-      if(input$original_study) {
+      if(input$original_study & original_conducted()) {
         shiny::tagList(
           shiny::tags$h3("Original Hypothesis"),
           shiny::uiOutput("hypothesis_ui")
@@ -372,7 +411,7 @@ RepliCrisis <- function(){
 
     # Diagnostics Title
     output$diagnostics_title <- shiny::renderUI({
-      if(input$show_diagnostics) {
+      if(diagnostics_requested() & original_conducted()) {
         shiny::tagList(
           shiny::tags$h3("Diagnostics"),
           shiny::uiOutput("fit_plot_ui"),
@@ -384,7 +423,7 @@ RepliCrisis <- function(){
 
     # Descriptive Statistics Title
     output$descriptive_stats_title <- shiny::renderUI({
-      if(input$show_descriptives) {
+      if(descriptives_requested() & original_conducted()) {
         shiny::tagList(
           shiny::tags$h3("Descriptive Statistics"),
           shiny::uiOutput("descriptives_ui")
@@ -394,7 +433,7 @@ RepliCrisis <- function(){
 
     # Replication Study Title
     output$replication_study_title <- shiny::renderUI({
-      if(replication_conducted()) {
+      if(replication_conducted() & original_conducted()) {
         shiny::tagList(
           shiny::tags$h3("Replication Study"),
           shiny::uiOutput("rep_card_display")
@@ -404,7 +443,7 @@ RepliCrisis <- function(){
 
     # Swap Cards Title
     output$swap_cards_title <- shiny::renderUI({
-      if(replication_conducted()) {
+      if(replication_conducted() & original_conducted()) {
         shiny::tagList(
           shiny::tags$h3("Swap Cards"),
           shiny::uiOutput("swap_controls_ui")
@@ -414,7 +453,7 @@ RepliCrisis <- function(){
 
     # Results Title
     output$results_title <- shiny::renderUI({
-      if(input$run_replication & replication_conducted()) {
+      if(input$run_replication & replication_conducted() & original_conducted()) {
         shiny::tagList(
           shiny::tags$h3("Results"),
           shiny::verbatimTextOutput("bain_results_summary"),
