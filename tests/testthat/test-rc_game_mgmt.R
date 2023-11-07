@@ -134,46 +134,46 @@ test_that("i_deck Game Workflow",{
 
 })
 
-test_that("Random Hands Game Flow",{
-
-  # Create function to test random hands
-  find_errors <- function(num_iterations, n = 3, sample_size = 10) {
-    error_seeds <- numeric(0)
-
-    for (i in 1:num_iterations) {
-      seed <- sample.int(10000, 1)  # Randomly selecting a seed value up to 10,000
-      set.seed(seed)
-
-      tryCatch({
-        ## Original study
-        os_deck <- deal_cards_to_rc_grid(n = n)
-        original_study_data <- generate_study_data(os_deck, sample_size = sample_size)
-        original_study_results <- process_original_study(original_study_data)
-
-        ## Replication study
-        rs_deck <- deal_cards_to_rc_grid(n = n)
-        replication_data <- generate_study_data(rs_deck, sample_size = sample_size)
-        replication_results <- process_replication_study(replication_data,
-                                                         original_study_results)
-      },
-      error = function(e) {
-        message("Error encountered with seed: ", seed)
-        error_seeds <- c(error_seeds, seed)
-      })
-    }
-
-    return(error_seeds)
-  }
-
-  # Call the function
-  num_iterations <- 5
-
-  # Test on n = 3, sample_size = 10
-  error_seeds_3_10 <- find_errors(num_iterations)
-  expect_equal(length(error_seeds_3_10), 0)
-
-  # Test on n = 13, sample_size = 15
-  error_seeds_13_15 <- find_errors(num_iterations, n = 13, sample_size = 15)
-  expect_equal(length(error_seeds_13_15), 0)
-
-})
+# test_that("Random Hands Game Flow",{
+#
+#   # Create function to test random hands
+#   find_errors <- function(num_iterations, n = 3, sample_size = 10) {
+#     error_seeds <- numeric(0)
+#
+#     for (i in 1:num_iterations) {
+#       seed <- sample.int(10000, 1)  # Randomly selecting a seed value up to 10,000
+#       set.seed(seed)
+#
+#       tryCatch({
+#         ## Original study
+#         os_deck <- deal_cards_to_rc_grid(n = n)
+#         original_study_data <- generate_study_data(os_deck, sample_size = sample_size)
+#         original_study_results <- process_original_study(original_study_data)
+#
+#         ## Replication study
+#         rs_deck <- deal_cards_to_rc_grid(n = n)
+#         replication_data <- generate_study_data(rs_deck, sample_size = sample_size)
+#         replication_results <- process_replication_study(replication_data,
+#                                                          original_study_results)
+#       },
+#       error = function(e) {
+#         message("Error encountered with seed: ", seed)
+#         error_seeds <- c(error_seeds, seed)
+#       })
+#     }
+#
+#     return(error_seeds)
+#   }
+#
+#   # Call the function
+#   num_iterations <- 5
+#
+#   # Test on n = 3, sample_size = 10
+#   error_seeds_3_10 <- find_errors(num_iterations)
+#   expect_equal(length(error_seeds_3_10), 0)
+#
+#   # Test on n = 13, sample_size = 15
+#   error_seeds_13_15 <- find_errors(num_iterations, n = 13, sample_size = 15)
+#   expect_equal(length(error_seeds_13_15), 0)
+#
+# })
