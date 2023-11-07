@@ -69,6 +69,7 @@ RepliCrisis <- function(){
     descriptives_requested <- shiny::reactiveVal(FALSE)
     replication_cards <- shiny::reactiveVal(NULL)
     replication_conducted <- shiny::reactiveVal(FALSE)
+    replication_results <- shiny::reactiveVal(NULL)
 
     shiny::observeEvent(input$original_study, {
 
@@ -79,6 +80,7 @@ RepliCrisis <- function(){
       descriptives_requested(FALSE)
       replication_cards(NULL)
       replication_conducted(FALSE)
+      replication_results(NULL)
 
       # If seed value is provided, set it
       if (!is.na(input$seed_value)) {
@@ -212,11 +214,14 @@ RepliCrisis <- function(){
       card_grid_replication <- deal_cards_to_rc_grid(n = input$difficulty)
 
       # Update the reactive value
-      replication_cards(card_grid_replication)
+      if (!replication_conducted()){
+        replication_cards(card_grid_replication)
+      }
+
 
       # Rendering the UI for the card grid for replication study
       output$rep_card_display <- shiny::renderUI({
-        render_card_grid(card_grid_replication)
+        render_card_grid(replication_cards())
       })
 
       # Set the reactive value to TRUE since the replication study is now conducted
@@ -341,18 +346,21 @@ RepliCrisis <- function(){
       # Process replication study
       replication_results <- process_replication_study(replication_data, study_results())
 
+      # Update reactive value
+      replication_results(replication_results)
+
       # Display the replication study results in the UI
       output$bain_results_summary <- shiny::renderPrint({
-        summary(replication_results$bain_results)
+        summary(replication_results()$bain_results)
       })
 
       output$bain_results <- shiny::renderPrint({
-        print(replication_results$bain_results)
+        print(replication_results()$bain_results)
       })
 
       # Interpret the replication results using the thresholds provided by the user
       interpretation <- interpret_replication_results(
-        replication_results,
+        replication_results(),
         bf_threshold = input$bf_threshold,
         pmpb_threshold = input$pmpb_threshold
       )
@@ -453,7 +461,7 @@ RepliCrisis <- function(){
 
     # Results Title
     output$results_title <- shiny::renderUI({
-      if(input$run_replication & replication_conducted() & original_conducted()) {
+      if(replication_conducted() & original_conducted() & !is.null(replication_results())) {
         shiny::tagList(
           shiny::tags$h3("Results"),
           shiny::verbatimTextOutput("bain_results_summary"),

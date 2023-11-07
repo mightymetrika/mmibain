@@ -28,15 +28,18 @@ studies based on the framework presented in \[Hoijtink, Mulder, van
 Lissa & Gu (2019)\](<https://doi.org/10.1037/met0000201>. Follow these
 steps to play:
 
-*Set your sample size, difficulty, alpha level, and seed for
-reproducibility. *Define thresholds for the Bayes Factor and Posterior
-Model Probability to assess evidence in favor of the original study.
-*Conduct the original study to generate data and form a hypothesis.
-*Show diagnostics and descriptives to understand statistical results and
-hypotheses. *Conduct a replication study, using swap controls to match
-the original study’s results. *Run replication analysis to evaluate the
-results against the original hypothesis. \*Start a new game by
-conducting a new original study.
+- Set your sample size (for groups within study), difficulty, alpha
+  level, and seed for reproducibility.
+- Define thresholds for the Bayes Factor and Posterior Model Probability
+  to assess evidence in favor of the original study.
+- Conduct the original study to generate data and form a hypothesis.
+- Show diagnostics and descriptives to understand statistical results
+  and hypotheses.
+- Conduct a replication study, using swap controls to match the original
+  study’s results.
+- Run replication analysis to evaluate the results against the original
+  hypothesis.
+- Start a new game by conducting a new original study.
 
 To play, load ‘mmibain’ and call the RepliCrisis() function:
 
@@ -50,12 +53,14 @@ RepliCrisis()
 The package also includes a Shiny app for running basic bain::bain()
 models:
 
-*Upload your data in CSV format. *Choose your modeling engine (lm,
-t_test, lavaan). *Input your model and any additional arguments. *Fit
-the model and input hypotheses for evaluation. *Adjust settings such as
-the fraction parameter, standardized regression coefficients, and
-confidence intervals. *Set a seed for reproducible results. \*Run the
-Bayesian Informative Hypotheses Evaluation.
+- Upload your data in CSV format.
+- Choose your modeling engine (lm, t_test, lavaan).
+- Input your model and any additional arguments.
+- Fit the model and input hypotheses for evaluation.
+- Adjust settings such as the fraction parameter, standardized
+  regression coefficients, and confidence intervals.
+- Set a seed for reproducible results.
+- Run the Bayesian Informative Hypotheses Evaluation.
 
 Launch the app with:
 
