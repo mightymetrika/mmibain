@@ -24,9 +24,9 @@ devtools::install_github("mightymetrika/mmibain")
 ## Play RepliCrisis
 
 ‘RepliCrisis’ is a Shiny app game that simulates evalutating replication
-studies based on the framework presented in \[Hoijtink, Mulder, van
-Lissa & Gu (2019)\](<https://doi.org/10.1037/met0000201>. Follow these
-steps to play:
+studies based on the framework presented in [Hoijtink, Mulder, van Lissa
+& Gu (2019)](https://doi.org/10.1037/met0000201). Follow these steps to
+play:
 
 - Set your sample size (for groups within study), difficulty, alpha
   level, and seed for reproducibility.
