@@ -11,7 +11,7 @@ Description: Researchers often have expectations about the relations between mea
     order constraints increases statistical power
     Vanbrabant and Rosseel (2020) <doi:10.4324/9780429273872-14>. Another valuable
     tool, the Bayes factor, can evaluate evidence for multiple hypotheses without
-    concerns about multiple testing, and it can be used in Bayesian updating
+    concerns about multiple testing, and can be used in Bayesian updating
     Hoijtink, Mulder, van Lissa & Gu (2019) <doi:10.1037/met0000201>. The 'bain'
     R package enables informative hypothesis testing using the Bayes factor. The
     'mmibain' package provides 'shiny' web applications based on 'bain'. The

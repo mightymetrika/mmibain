@@ -13,6 +13,13 @@ package for BAyesian INformative Hypotheses Evaluation.
 
 ## Installation
 
+You can install the released version of ‘mmibain’ from
+[CRAN](https://CRAN.R-project.org):
+
+``` r
+install.packages("mmibain")
+```
+
 You can install the development version of ‘mmibain’ from
 [GitHub](https://github.com/) with:
 

@@ -16,18 +16,6 @@ str2list <- function(arg_str) {
   eval(parse(text = paste0("list(", arg_str, ")")), envir = new.env())
 }
 
-# concatenate_relations <- function(greater_less, equals) {
-#   if (greater_less == "" && equals == "") {
-#     return("")
-#   } else if (greater_less == "") {
-#     return(equals)
-#   } else if (equals == "") {
-#     return(greater_less)
-#   } else {
-#     return(paste(greater_less, equals, sep = " & "))
-#   }
-# }
-
 #' Generate Descriptive Statistics for Study Groups
 #'
 #' @description
