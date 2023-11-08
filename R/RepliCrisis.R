@@ -144,6 +144,11 @@ RepliCrisis <- function(){
       results <- study_results()
 
       output$fit_plot <- shiny::renderPlot({
+
+        # Setup on.exit to reset graphical parameters
+        oldpar <- graphics::par(no.readonly = TRUE)
+        on.exit(graphics::par(oldpar))
+
         # Set up a 2x2 grid for 4 plots
         graphics::par(mfrow = c(2, 2))
 
@@ -158,9 +163,6 @@ RepliCrisis <- function(){
 
         # Plot 4: Cook's distance
         plot(results$fit, which = 4)
-
-        # Reset graphics parameters to default (optional but good practice)
-        graphics::par(mfrow = c(1, 1))
       })
 
       # Get diagnostic statistical tests
