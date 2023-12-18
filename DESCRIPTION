@@ -29,6 +29,7 @@ Imports:
     bain,
     broom,
     car,
+    DT,
     e1071,
     igraph,
     lavaan,

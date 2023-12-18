@@ -68,7 +68,9 @@ mmibain <- function(){
         shiny::actionButton("run_analysis", "Run Analysis")
       ),
       shiny::mainPanel(
-        shiny::htmlOutput("variables_section"),
+        #shiny::htmlOutput("variables_section"),
+        shiny::uiOutput("variables_title"),  # Placeholder for the title
+        DT::dataTableOutput("variables_table"),
         shiny::uiOutput("model_terms_header"),
         shiny::verbatimTextOutput("model_terms"),
         shiny::uiOutput("bain_results_header"),
@@ -82,31 +84,108 @@ mmibain <- function(){
   server <- function(input, output, session) {
 
     # Reactive: Read the uploaded CSV file
-    uploaded_data <- shiny::reactive({
-      # Check if a file is uploaded
+    uploaded_data <- shiny::reactiveVal()
+
+    shiny::observe({
       inFile <- input$datafile
-      if (is.null(inFile)) {
-        return(NULL)
-      }
-
-      # Read the CSV and return it
-      utils::read.csv(inFile$datapath, stringsAsFactors = TRUE)
-    })
-
-    # Display the entire variables section (header + variable names)
-    output$variables_section <- shiny::renderUI({
-      if (!is.null(uploaded_data())) {
-        list(
-          shiny::tags$h2("Available Variables"),
-          shiny::verbatimTextOutput("variables")
-        )
+      if (!is.null(inFile)) {
+        data <- utils::read.csv(inFile$datapath, stringsAsFactors = TRUE)
+        uploaded_data(data)
       }
     })
 
-    # Display the variable names
-    output$variables <- shiny::renderPrint({
-      names(uploaded_data())
+    output$variables_title <- shiny::renderUI({
+      if (!is.null(uploaded_data()) && nrow(uploaded_data()) > 0) {
+        shiny::tags$h2("Available Variables")
+      }
     })
+
+
+    output$variables_table <- DT::renderDataTable({
+      shiny::req(uploaded_data())
+      data <- uploaded_data()
+      df <- data.frame(Variable = names(data), Type = sapply(data, class))
+      DT::datatable(df, editable = 'cell', options = list(pageLength = 5),
+                    rownames = FALSE)
+    })
+
+    shiny::observeEvent(input$variables_table_cell_edit, {
+      info <- input$variables_table_cell_edit
+      shiny::req(uploaded_data())
+      data <- uploaded_data()
+
+      row_number <- info$row
+      new_value <- info$value
+
+      if (info$col == 0){
+        tryCatch({
+          names(data)[row_number] <- new_value
+          # Update the reactive data frame
+          uploaded_data(data)
+        }, error = function(e) {
+          shiny::showNotification(
+            paste("Error in changing variable name:", e$message),
+            type = "error",
+            duration = NULL
+          )
+        })
+      }
+
+      if (info$col == 1) {  # Assuming the 'Type' column is the second column
+        variable_name <- names(data)[row_number]  # Fetch the variable name using row_number
+        tryCatch({
+          if (new_value == "factor") {
+            data[[variable_name]] <- as.factor(data[[variable_name]])
+          } else if (new_value == "numeric") {
+            data[[variable_name]] <- as.numeric(data[[variable_name]])
+          } else if (new_value == "integer") {
+            data[[variable_name]] <- as.integer(data[[variable_name]])
+          } else if (new_value == "double") {
+            data[[variable_name]] <- as.double(data[[variable_name]])
+          } else if (new_value == "character") {
+            data[[variable_name]] <- as.character(data[[variable_name]])
+          } else {
+            stop("New data type must be one of the following: factor, numeric, integer, double, character")
+          }
+          # Update the reactive data frame
+          uploaded_data(data)
+        }, error = function(e) {
+          shiny::showNotification(
+            paste("Error in changing data type:", e$message),
+            type = "error",
+            duration = NULL
+          )
+        })
+      }
+    })
+
+
+    # # Reactive: Read the uploaded CSV file
+    # uploaded_data <- shiny::reactive({
+    #   # Check if a file is uploaded
+    #   inFile <- input$datafile
+    #   if (is.null(inFile)) {
+    #     return(NULL)
+    #   }
+    #
+    #   # Read the CSV and return it
+    #   utils::read.csv(inFile$datapath, stringsAsFactors = TRUE)
+    # })
+    #
+    # # Display the entire variables section (header + variable names)
+    # output$variables_section <- shiny::renderUI({
+    #   if (!is.null(uploaded_data())) {
+    #     list(
+    #       shiny::tags$h2("Available Variables"),
+    #       shiny::verbatimTextOutput("variables")
+    #     )
+    #   }
+    # })
+    #
+    # # Display the variable names
+    # output$variables <- shiny::renderPrint({
+    #   names(uploaded_data())
+    # })
 
     # Select Engine
     shiny::observe({
