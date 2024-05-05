@@ -16,7 +16,7 @@ BF_for_everyone <- function(.df, .participant, formula, hypothesis) {
   .N <- length(dsets)
 
   # get number of hypotheses
-  .n_hyp <- length(gregexpr(";", hypothesis, fixed = TRUE)) + 1
+  .n_hyp <- length(strsplit(hypothesis, split = ";")[[1]])
 
   # process results to extract Bayes Factors
   results <- lapply(bain_res, function(x) {
@@ -38,5 +38,32 @@ BF_for_everyone <- function(.df, .participant, formula, hypothesis) {
   results_matrix <- do.call(rbind, results)
   colnames(results_matrix) <- names(results[[1]])
 
-  return(results_matrix)
+  # compute gPBF
+  res <- apply(results_matrix, 2, function(x){
+    .N_there <- sum(!is.na(x))
+    GP <- prod(x, na.rm = TRUE) ^ (1 / .N_there)
+    ER <- abs((GP < 1) - sum(x > 1, na.rm = TRUE)/.N_there)
+    SR <- ifelse(GP < 1,
+                 sum(x < GP, na.rm = TRUE) / .N_there,
+                 sum(x > GP, na.rm = TRUE) / .N_there)
+    c(GP, ER, SR)
+  })
+
+  rownames(res) <- c("Geometric Product", "Evidence Rate", "Stability Rate")
+
+  # BF summary
+  BF_summary <- apply(results_matrix, 2, function(x) {
+    c(
+      Mean = mean(x, na.rm = TRUE),
+      Median = stats::median(x, na.rm = TRUE),
+      SD = stats::sd(x, na.rm = TRUE),
+      Min = min(x, na.rm = TRUE),
+      Max = max(x, na.rm = TRUE)
+    )
+  })
+
+  out <- list(GPBF = res, BFs = results_matrix,
+              BF_summary = BF_summary, N = .N,
+              bain_res = bain_res)
+  return(out)
 }

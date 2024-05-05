@@ -2,11 +2,18 @@ test_that("BF_for_everyone works", {
 
   bf_dat <- read.table(file = "https://raw.githubusercontent.com/fayetteklaassen/gpbf/master/data.txt", header = TRUE)
 
-  str(bf_dat)
+  # results <- BF_for_everyone(.df = bf_dat, .participant = "ppnr",
+  #                            formula = "TimePerception ~ Condition + Valence + Arousal",
+  #                            hypothesis = "Condition=0 & Valence>0 & Arousal>0")
 
   results <- BF_for_everyone(.df = bf_dat, .participant = "ppnr",
                          formula = "TimePerception ~ Condition + Valence + Arousal",
                          hypothesis = "Condition=0 & Valence>0 & Arousal>0; Condition>0 & Valence>0 & Arousal>0")
+
+  # results <- BF_for_everyone(.df = bf_dat, .participant = "ppnr",
+  #                            formula = "TimePerception ~ Condition + Valence + Arousal",
+  #                            hypothesis = "Condition=0 & Valence>0 & Arousal>0; Condition>0 & Valence>0 & Arousal>0; Condition=Valence=Arousal")
+
 
 
   # n_semi <- length(gregexpr(";", hypothesis, fixed = TRUE))
@@ -56,31 +63,31 @@ test_that("BF_for_everyone works", {
   #   # save the 4 BFs in the i-th row of the output matrix
   #   output[i,] <- c(BF1c,BF12)
   # }
-#
-#   ###########################
-#   ##### gpbf function #######
-#   ###########################
-#   gPBF <- function(BFs){
-#     N  <- ifelse(is.null(nrow(BFs)), length(BFs), nrow(BFs))
-#
-#     res <- apply(BFs, 2, function(x){
-#       GP <- prod(x) ^ (1 / N)
-#       ER <- abs((GP < 1) - sum(x > 1)/N)
-#       SR <- ifelse(GP < 1,
-#                    sum(x < GP) / N,
-#                    sum(x > GP) / N)
-#       c(GP, ER, SR)
-#     })
-#
-#     rownames(res) <- c("Geometric Product", "Evidence Rate", "Stability Rate")
-#     out <- list("GPBF" = res, "BFs" = BFs, "N" = N)
-#     class(out) <- "gPBF"
-#     return(out)
-#   }
-#   ##############################
-#   ### obtaining the gpbfs ######
-#   ##############################
-#   gpout <- gPBF(output)
+
+  # ###########################
+  # ##### gpbf function #######
+  # ###########################
+  # gPBF <- function(BFs){
+  #   N  <- ifelse(is.null(nrow(BFs)), length(BFs), nrow(BFs))
+  #
+  #   res <- apply(BFs, 2, function(x){
+  #     GP <- prod(x) ^ (1 / N)
+  #     ER <- abs((GP < 1) - sum(x > 1)/N)
+  #     SR <- ifelse(GP < 1,
+  #                  sum(x < GP) / N,
+  #                  sum(x > GP) / N)
+  #     c(GP, ER, SR)
+  #   })
+  #
+  #   rownames(res) <- c("Geometric Product", "Evidence Rate", "Stability Rate")
+  #   out <- list("GPBF" = res, "BFs" = BFs, "N" = N)
+  #   class(out) <- "gPBF"
+  #   return(out)
+  # }
+  # ##############################
+  # ### obtaining the gpbfs ######
+  # ##############################
+  # gpout <- gPBF(output)
 
 
   expect_equal(2 * 2, 4)
