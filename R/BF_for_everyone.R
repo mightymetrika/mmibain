@@ -62,8 +62,27 @@ BF_for_everyone <- function(.df, .participant, formula, hypothesis) {
     )
   })
 
+  # Prepare data for plotting
+  rm_temp <- results_matrix |> as.data.frame()
+  rm_long <- do.call(rbind, lapply(names(rm_temp), function(x){
+    data.frame(Comparison = x, BF = rm_temp[[x]], check.names = FALSE)
+  }))
+
+  # declare temporary variables for plot
+  Comparison <- NULL
+  BF <- NULL
+
+  # create plot
+  p <- ggplot2::ggplot(rm_long, ggplot2::aes(x = Comparison, y = BF)) +
+    ggplot2::geom_boxplot(outlier.shape = NA)+
+    ggplot2::geom_jitter(show.legend = FALSE,  height = 0, alpha = 0.25)+
+    ggplot2::facet_wrap(~Comparison, scales = "free_x") +
+    ggplot2::theme_minimal() +
+    ggplot2::labs(title = "Bayes Factors by Comparison", y = "Bayes Factor", x = "Comparison")
+
+
   out <- list(GPBF = res, BFs = results_matrix,
               BF_summary = BF_summary, N = .N,
-              bain_res = bain_res)
+              bain_res = bain_res, Plot = p)
   return(out)
 }

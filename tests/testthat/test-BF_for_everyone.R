@@ -2,13 +2,16 @@ test_that("BF_for_everyone works", {
 
   bf_dat <- read.table(file = "https://raw.githubusercontent.com/fayetteklaassen/gpbf/master/data.txt", header = TRUE)
 
+  results <- BF_for_everyone(.df = bf_dat, .participant = "ppnr",
+                         formula = "TimePerception ~ Condition + Valence + Arousal",
+                         hypothesis = "Condition=0 & Valence>0 & Arousal>0; Condition>0 & Valence>0 & Arousal>0")
+
+
   # results <- BF_for_everyone(.df = bf_dat, .participant = "ppnr",
   #                            formula = "TimePerception ~ Condition + Valence + Arousal",
   #                            hypothesis = "Condition=0 & Valence>0 & Arousal>0")
 
-  results <- BF_for_everyone(.df = bf_dat, .participant = "ppnr",
-                         formula = "TimePerception ~ Condition + Valence + Arousal",
-                         hypothesis = "Condition=0 & Valence>0 & Arousal>0; Condition>0 & Valence>0 & Arousal>0")
+
 
   # results <- BF_for_everyone(.df = bf_dat, .participant = "ppnr",
   #                            formula = "TimePerception ~ Condition + Valence + Arousal",
