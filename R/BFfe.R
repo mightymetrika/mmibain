@@ -21,11 +21,11 @@ BFfe <- function(){
       shiny::mainPanel(
         shiny::uiOutput("variables_title"),  # Placeholder for the title
         DT::dataTableOutput("variables_table"),
-        # shiny::uiOutput("model_summ_header"),
-        # DT::DTOutput("model_summ"),
-        # DT::DTOutput("glance_model"),
-        shiny::uiOutput("BFfe_results_header"),
-        shiny::verbatimTextOutput("print_BFfe_output")
+        shiny::uiOutput("BFfe_summary_header"),
+        shiny::verbatimTextOutput("BFfe_summary_output"),
+        shiny::uiOutput("GPBF_header"),
+        shiny::verbatimTextOutput("GPBF_output"),
+        shiny::uiOutput("Plot_output")
       )
     )
   )
@@ -152,8 +152,10 @@ BFfe <- function(){
         )
 
 
-        # Set outputs for the CATs analysis
-        output$print_BFfe_output <- shiny::renderPrint({ print(BFfe_result$BF_summary) })
+        # Set outputs for the BFfe analysis
+        output$BFfe_summary_output <- shiny::renderPrint({ BFfe_result$BF_summary })
+        output$GPBF_output <- shiny::renderPrint({ BFfe_result$GPBF })
+        output$Plot_output <- shiny::renderPlot({ BFfe_result$Plot })
 
         # Flag that BFfe analysis is done
         BFfe_analysis_done(TRUE)
@@ -170,11 +172,18 @@ BFfe <- function(){
       })
     })
 
-    output$BFfe_results_header <- shiny::renderUI({
+    output$BFfe_summary_header <- shiny::renderUI({
       if(BFfe_analysis_done()) {
-        shiny::tags$h2("BF for Everyone Results")
+        shiny::tags$h2("BFfe Summary")
       }
     })
+
+    output$GPBF_header <- shiny::renderUI({
+      if(BFfe_analysis_done()) {
+        shiny::tags$h2("GPBF Summary")
+      }
+    })
+
   }
 
   shiny::shinyApp(ui = ui, server = server)
