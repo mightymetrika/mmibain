@@ -12,11 +12,9 @@ BFfe <- function(){
                                     ".csv")),
         shiny::uiOutput("model_input_ui"),
         shiny::uiOutput("hypothesis_input_ui"),
-        shiny::textInput("participant", "Participant Variable"),
-        shiny::br(),  # Add a line break
-        shiny::br(),  # Add a line break
-        shiny::numericInput("seed_value", "Set seed (optional)", value = NA, min = 1, max = .Machine$integer.max),
-        shiny::actionButton("run_analysis", "Run Analysis")
+        shiny::uiOutput("participant_input_ui"),
+        shiny::uiOutput("seed_input_ui"),
+        shiny::uiOutput("run_analysis_input_ui")
       ),
       shiny::mainPanel(
         shiny::uiOutput("variables_title"),  # Placeholder for the title
@@ -25,7 +23,7 @@ BFfe <- function(){
         shiny::verbatimTextOutput("BFfe_summary_output"),
         shiny::uiOutput("GPBF_header"),
         shiny::verbatimTextOutput("GPBF_output"),
-        shiny::uiOutput("Plot_output")
+        shiny::plotOutput("Plot_output")
       )
     )
   )
@@ -109,7 +107,7 @@ BFfe <- function(){
       }
     })
 
-    # Select Engine
+    # Enter formula
     shiny::observe({
       if (!is.null(uploaded_data())) {
         output$model_input_ui <- shiny::renderUI({
@@ -118,7 +116,7 @@ BFfe <- function(){
       }
     })
 
-    # Select Engine
+    # Enter hypothesis
     shiny::observe({
       if (!is.null(uploaded_data())) {
         output$hypothesis_input_ui <- shiny::renderUI({
@@ -127,10 +125,39 @@ BFfe <- function(){
       }
     })
 
+    # Enter participant
+    shiny::observe({
+      if (!is.null(uploaded_data())) {
+        output$participant_input_ui <- shiny::renderUI({
+          shiny::textInput("participant", "Participant Variable")
+        })
+      }
+    })
+
+    # Enter seed
+    shiny::observe({
+      if (!is.null(uploaded_data())) {
+        output$seed_input_ui <- shiny::renderUI({
+          shiny::numericInput("seed_value", "Set seed (optional)",
+                              value = NA, min = 1, max = .Machine$integer.max)
+        })
+      }
+    })
+
+    # Enter analysis button
+    shiny::observe({
+      if (!is.null(uploaded_data())) {
+        output$run_analysis_input_ui <- shiny::renderUI({
+          shiny::actionButton("run_analysis", "Run Analysis")
+        })
+      }
+    })
+
     # Logic to run BFfe analysis on the fitted model
 
     # Set reactive value to flag when analysis is done
     BFfe_analysis_done <- shiny::reactiveVal(FALSE)
+    #BFfe_res <- shiny::reactiveVal()
 
     shiny::observeEvent(input$run_analysis, {
       # Ensure the necessary inputs are available
@@ -156,6 +183,8 @@ BFfe <- function(){
         output$BFfe_summary_output <- shiny::renderPrint({ BFfe_result$BF_summary })
         output$GPBF_output <- shiny::renderPrint({ BFfe_result$GPBF })
         output$Plot_output <- shiny::renderPlot({ BFfe_result$Plot })
+
+        # BFfe_res(BFfe_result)
 
         # Flag that BFfe analysis is done
         BFfe_analysis_done(TRUE)
