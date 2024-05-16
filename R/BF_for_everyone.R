@@ -1,3 +1,51 @@
+#' Compute Bayes Factors for Each Participant and Summarize Results
+#'
+#' This function splits a dataset by participants, fits linear models for each
+#' participant, computes Bayes Factors (BFs) using the `bain` package, and
+#' summarizes the results.
+#'
+#' @param .df A data frame containing the data.
+#' @param .participant A string specifying the name of the participant column in
+#' the data frame.
+#' @param formula A formula specifying the linear model to be fit.
+#' @param hypothesis A string specifying the hypotheses to be tested using the
+#' `bain` package.
+#'
+#' @return A list containing:
+#' \describe{
+#'   \item{GPBF}{A matrix of the geometric product, evidence rate, and stability
+#'   rate for each hypothesis.}
+#'   \item{BFs}{A matrix of the Bayes Factors for each participant and hypothesis.}
+#'   \item{BF_summary}{A summary matrix of the mean, median, standard deviation,
+#'   minimum, and maximum of the Bayes Factors for each hypothesis.}
+#'   \item{N}{The number of participants.}
+#'   \item{bain_res}{A list of `bain` results for each participant.}
+#'   \item{Plot}{A `ggplot2` object visualizing the distribution of Bayes Factors
+#'   by hypothesis.}
+#' }
+#'
+#' @examples
+#'   # Create data
+#'   ex_dat <- data.frame(
+#'     participant = rep(1:10, each = 10),
+#'     x = rnorm(100),
+#'     y = rnorm(100)
+#'     )
+#'
+#'   # Run analysis
+#'   res <- BF_for_everyone(.df = ex_dat, .participant = "participant",
+#'                          formula = "y ~ x", hypothesis = "x > 0")
+#'
+#'   # View GPBF results
+#'   res$GPBF
+#'
+#' @references
+#' Klaassen, F. (2020). Combining Evidence Over Multiple Individual Analyses. In
+#' R. van de Schoot & M. Miočević (Eds.), Small Sample Size Solutions: A Guide for
+#' Applied Researchers and Practitioners (1st ed., pp. 13). Routledge.
+#' <doi:10.4324/9780429273872-11>
+#'
+#' @export
 BF_for_everyone <- function(.df, .participant, formula, hypothesis) {
   # split data
   dsets <- split(.df, .df[[.participant]])
@@ -10,7 +58,7 @@ BF_for_everyone <- function(.df, .participant, formula, hypothesis) {
 
     # fit bain model
     bain::bain(lm_model, hypothesis = hypothesis)
-  })
+  }) |> stats::setNames(names(dsets))
 
   # get number of participants
   .N <- length(dsets)
@@ -32,20 +80,37 @@ BF_for_everyone <- function(.df, .participant, formula, hypothesis) {
     }
 
     return(BF_out)
-  })
+  }) |> stats::setNames(names(bain_res))
 
   # convert the list of results to a matrix
   results_matrix <- do.call(rbind, results)
   colnames(results_matrix) <- names(results[[1]])
+  rownames(results_matrix) <- names(bain_res)
 
   # compute gPBF
-  res <- apply(results_matrix, 2, function(x){
-    .N_there <- sum(!is.na(x))
-    GP <- prod(x, na.rm = TRUE) ^ (1 / .N_there)
-    ER <- abs((GP < 1) - sum(x > 1, na.rm = TRUE)/.N_there)
-    SR <- ifelse(GP < 1,
-                 sum(x < GP, na.rm = TRUE) / .N_there,
-                 sum(x > GP, na.rm = TRUE) / .N_there)
+  # res <- apply(results_matrix, 2, function(x){
+  #   .N_there <- sum(!is.na(x))
+  #   GP <- prod(x, na.rm = TRUE) ^ (1 / .N_there)
+  #   ER <- abs((GP < 1) - sum(x > 1, na.rm = TRUE)/.N_there)
+  #   SR <- ifelse(GP < 1,
+  #                sum(x < GP, na.rm = TRUE) / .N_there,
+  #                sum(x > GP, na.rm = TRUE) / .N_there)
+  #   c(GP, ER, SR)
+  # })
+
+  res <- apply(results_matrix, 2, function(x) {
+    # Remove NA values
+    x <- x[!is.na(x)]
+
+    # Compute geometric product
+    GP <- exp(mean(log(x)))
+
+    # Compute evidence rate
+    ER <- abs((GP < 1) - mean(x > 1))
+
+    # Compute stability rate
+    SR <- mean(ifelse(GP < 1, x < GP, x > GP))
+
     c(GP, ER, SR)
   })
 
