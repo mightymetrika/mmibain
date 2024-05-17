@@ -25,19 +25,16 @@
 #' }
 #'
 #' @examples
-#'   # Create data
-#'   ex_dat <- data.frame(
-#'     participant = rep(1:10, each = 10),
-#'     x = rnorm(100),
-#'     y = rnorm(100)
-#'     )
+#'  # Create data
+#'  cars2 <- cars
+#'  cars2[["parts"]] <- rep(1:10, each = 5)
 #'
-#'   # Run analysis
-#'   res <- BF_for_everyone(.df = ex_dat, .participant = "participant",
-#'                          formula = "y ~ x", hypothesis = "x > 0")
+#'  # Run analysis
+#'  res <- BF_for_everyone(.df = cars2, .participant = "parts",
+#'                         formula = "dist ~ speed", hypothesis = "speed > 0")
 #'
-#'   # View GPBF results
-#'   res$GPBF
+#'  # View GPBF results
+#'  res$GPBF
 #'
 #' @references
 #' Klaassen, F. (2020). Combining Evidence Over Multiple Individual Analyses. In
@@ -88,16 +85,6 @@ BF_for_everyone <- function(.df, .participant, formula, hypothesis) {
   rownames(results_matrix) <- names(bain_res)
 
   # compute gPBF
-  # res <- apply(results_matrix, 2, function(x){
-  #   .N_there <- sum(!is.na(x))
-  #   GP <- prod(x, na.rm = TRUE) ^ (1 / .N_there)
-  #   ER <- abs((GP < 1) - sum(x > 1, na.rm = TRUE)/.N_there)
-  #   SR <- ifelse(GP < 1,
-  #                sum(x < GP, na.rm = TRUE) / .N_there,
-  #                sum(x > GP, na.rm = TRUE) / .N_there)
-  #   c(GP, ER, SR)
-  # })
-
   res <- apply(results_matrix, 2, function(x) {
     # Remove NA values
     x <- x[!is.na(x)]
@@ -143,7 +130,8 @@ BF_for_everyone <- function(.df, .participant, formula, hypothesis) {
     ggplot2::geom_jitter(show.legend = FALSE,  height = 0, alpha = 0.25)+
     ggplot2::facet_wrap(~Comparison, scales = "free_x") +
     ggplot2::theme_minimal() +
-    ggplot2::labs(title = "Bayes Factors by Comparison", y = "Bayes Factor", x = "Comparison")
+    ggplot2::labs(title = "Bayes Factors by Comparison",
+                  y = "Bayes Factor", x = "Comparison")
 
 
   out <- list(GPBF = res, BFs = results_matrix,

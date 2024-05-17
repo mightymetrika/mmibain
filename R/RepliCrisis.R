@@ -19,7 +19,7 @@
 #' @references
 #' Hoijtink, H., Mulder, J., van Lissa, C., & Gu, X. (2019). A tutorial on
 #' testing hypotheses using the Bayes factor. Psychological methods, 24(5),
-#' 539–556. https://doi.org/10.1037/met0000201
+#' 539–556. <doi:10.1037/met0000201>
 RepliCrisis <- function(){
   ui <- shiny::fluidPage(
     theme = shinythemes::shinytheme("paper"),

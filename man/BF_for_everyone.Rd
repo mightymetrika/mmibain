@@ -37,19 +37,16 @@ participant, computes Bayes Factors (BFs) using the \code{bain} package, and
 summarizes the results.
 }
 \examples{
-  # Create data
-  ex_dat <- data.frame(
-    participant = rep(1:10, each = 10),
-    x = rnorm(100),
-    y = rnorm(100)
-    )
+ # Create data
+ cars2 <- cars
+ cars2[["parts"]] <- rep(1:10, each = 5)
 
-  # Run analysis
-  res <- BF_for_everyone(.df = ex_dat, .participant = "participant",
-                         formula = "y ~ x", hypothesis = "x > 0")
+ # Run analysis
+ res <- BF_for_everyone(.df = cars2, .participant = "parts",
+                        formula = "dist ~ speed", hypothesis = "speed > 0")
 
-  # View GPBF results
-  res$GPBF
+ # View GPBF results
+ res$GPBF
 
 }
 \references{

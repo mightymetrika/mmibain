@@ -62,7 +62,8 @@ BFfe <- function() {
 
   # Server
   server <- function(input, output, session) {
-    # Reactive: Read the uploaded CSV file
+
+    # reactive: Read the uploaded CSV file
     uploaded_data <- shiny::reactiveVal()
     shiny::observe({
       inFile <- input$datafile
@@ -72,12 +73,14 @@ BFfe <- function() {
       }
     })
 
+    # set available variables title
     output$variables_title <- shiny::renderUI({
       if (!is.null(uploaded_data()) && nrow(uploaded_data()) > 0) {
         shiny::tags$h2("Available Variables")
       }
     })
 
+    # create variables table
     output$variables_table <- DT::renderDataTable({
       shiny::req(uploaded_data())
       data <- uploaded_data()
@@ -86,6 +89,7 @@ BFfe <- function() {
                     rownames = FALSE)
     })
 
+    # handle variable type edits
     shiny::observeEvent(input$variables_table_cell_edit, {
       info <- input$variables_table_cell_edit
       shiny::req(uploaded_data())
@@ -133,6 +137,7 @@ BFfe <- function() {
       }
     })
 
+    # setup formula ui
     shiny::observe({
       if (!is.null(uploaded_data())) {
         output$model_input_ui <- shiny::renderUI({
@@ -141,6 +146,7 @@ BFfe <- function() {
       }
     })
 
+    # setup hypothesis ui
     shiny::observe({
       if (!is.null(uploaded_data())) {
         output$hypothesis_input_ui <- shiny::renderUI({
@@ -149,6 +155,7 @@ BFfe <- function() {
       }
     })
 
+    # setup participant ui
     shiny::observe({
       if (!is.null(uploaded_data())) {
         output$participant_input_ui <- shiny::renderUI({
@@ -157,6 +164,7 @@ BFfe <- function() {
       }
     })
 
+    # set up seed ui
     shiny::observe({
       if (!is.null(uploaded_data())) {
         output$seed_input_ui <- shiny::renderUI({
@@ -166,6 +174,7 @@ BFfe <- function() {
       }
     })
 
+    # setup run analysis button
     shiny::observe({
       if (!is.null(uploaded_data())) {
         output$run_analysis_input_ui <- shiny::renderUI({
@@ -174,9 +183,11 @@ BFfe <- function() {
       }
     })
 
+    # set up reactive values for BF analysis
     BFfe_analysis_done <- shiny::reactiveVal(FALSE)
     BFfe_result <- shiny::reactiveVal()
 
+    # run BF_for_everyone analysis
     shiny::observeEvent(input$run_analysis, {
       shiny::req(uploaded_data(), input$participant, input$formula_or_model, input$hypothesis_str)
       if (!is.na(input$seed_value)) {
@@ -189,8 +200,12 @@ BFfe <- function() {
           formula = input$formula_or_model,
           hypothesis = input$hypothesis_str
         )
+
+        # use reactive values to flag that analysis is done
         BFfe_result(result)
         BFfe_analysis_done(TRUE)
+
+        # set output values related to BF analysis
         output$BFfe_summary_output <- shiny::renderPrint({ result$BF_summary })
         output$GPBF_output <- shiny::renderPrint({ result$GPBF })
         output$Plot_output <- shiny::renderPlot({ result$Plot })
@@ -205,24 +220,28 @@ BFfe <- function() {
       })
     })
 
+    # setup BF summary (or distribution) title
     output$BFfe_summary_header <- shiny::renderUI({
       if (BFfe_analysis_done()) {
         shiny::tags$h2("Distribution of Bayes Factors")
       }
     })
 
+    # setup GPBF header
     output$GPBF_header <- shiny::renderUI({
       if (BFfe_analysis_done()) {
         shiny::tags$h2("Geometric Mean of the Product of Bayes Factors")
       }
     })
 
+    # setup BGs header
     output$BFs_header <- shiny::renderUI({
       if (BFfe_analysis_done()) {
         shiny::tags$h2("Bayes Factors")
       }
     })
 
+    # create ui for particpant selection (to view individual bain results)
     output$participant_select_ui <- shiny::renderUI({
       shiny::req(BFfe_analysis_done())
       participants <- unique(uploaded_data()[[input$participant]])
@@ -230,6 +249,7 @@ BFfe <- function() {
                          choices = participants, selected = participants[1])
     })
 
+    # get participant bain results
     shiny::observeEvent(input$selected_participant, {
       shiny::req(BFfe_analysis_done())
       result <- BFfe_result()
@@ -244,6 +264,7 @@ BFfe <- function() {
       })
     })
 
+    # setup header for participant bain results
     output$participant_results_header <- shiny::renderUI({
       if (BFfe_analysis_done() && !is.null(input$selected_participant)) {
         shiny::tags$h2(paste0("BAIN Results for ", input$participant, ": ",
